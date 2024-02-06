@@ -59,3 +59,12 @@ input, button {
   color: #666;
   font-size: 12px;
 }
+
+.username-link {
+  text-decoration: none; /* Removes the underline */
+  color: #007bff; /* Sets the link color to blue */
+}
+
+.username-link:visited {
+  color: #007bff; /* Keeps the link color blue even after it's been visited */
+}
