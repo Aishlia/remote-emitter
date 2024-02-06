@@ -25,13 +25,16 @@ input, button {
 }
 
 .submission {
+  width: 600px; /* Fixed width */
+  max-width: 100%; /* Ensures responsiveness */
   border: 1px solid #ddd;
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   background-color: #fff;
-  margin-bottom: 10px; /* Space between messages */
-  position: relative; /* Required for absolute positioning of the header */
+  margin-bottom: 10px;
+  position: relative;
+  overflow-wrap: break-word; /* Ensures text breaks within the box */
 }
 
 .submission-header {
