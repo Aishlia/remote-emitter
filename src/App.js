@@ -1,42 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
+import { collection, query, onSnapshot, addDoc, orderBy } from "firebase/firestore"; // Import orderBy
+import { db } from './firebase-config';
 
 function App() {
   const [text, setText] = useState('');
-  const [submissions, setSubmissions] = useState([]);
   const [username, setUsername] = useState('');
+  const [messages, setMessages] = useState([]);
 
-  const fetchAddress = async (lat, lon) => {
-    try {
-      const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-      return response.data.address.road || 'Address not found';
-    } catch (error) {
-      console.error("Error fetching address: ", error);
-      return 'Error fetching address';
-    }
-  };
+  useEffect(() => {
+    const q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const msgs = querySnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      }));
+      setMessages(msgs);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!navigator.geolocation) {
+    let address = "No location";
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          address = response.data.display_name || "Address not found";
+          addMessage(address);
+        } catch (error) {
+          console.error("Error fetching address: ", error);
+          addMessage(address);
+        }
+      }, () => {
+        addMessage(address);
+      });
+    } else {
       console.error('Geolocation is not supported by your browser');
-      addSubmission("No location");
-      return;
+      addMessage(address);
     }
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-      const address = await fetchAddress(latitude, longitude);
-      addSubmission(address);
-    }, () => {
-      addSubmission("No location");
-    });
   };
-  
-  const addSubmission = (address) => {
-    const timestamp = new Date().toLocaleString();
-    setSubmissions([{ text, timestamp, address }, ...submissions]);
-    setText('');
-  };  
+
+  const addMessage = async (address) => {
+    const timestamp = new Date().toISOString();
+    const message = { username: username || "Anonymous", text, timestamp, address };
+    
+    try {
+      await addDoc(collection(db, "messages"), message);
+      setText('');
+    } catch (error) {
+      console.error("Could not send the message: ", error);
+    }
+  };
 
   return (
     <div className="App" style={{ textAlign: 'center' }}>
@@ -58,14 +78,14 @@ function App() {
         />
         <button type="submit" style={{ padding: '10px' }}>Submit</button>
       </form>
-      {submissions.map((submission, index) => (
-        <div key={index} className="submission">
+      {messages.map((message) => (
+        <div key={message.id} className="submission">
           <div className="submission-header">
-            <span>{username ? `@${username}` : 'Anonymous'}</span>
+            <span>{message.username ? `@${message.username}` : 'Anonymous'}</span>
           </div>
           <div className="submission-content">
-            <p>{submission.text}</p>
-            <small>{submission.timestamp} {submission.address}</small>
+            <p>{message.text}</p>
+            <small>{new Date(message.timestamp).toLocaleString()} - {message.address}</small>
           </div>
         </div>
       ))}
