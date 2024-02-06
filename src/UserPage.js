@@ -79,6 +79,7 @@ function UserPage() {
           style={{ marginRight: '10px', padding: '10px' }}
         />
         <button type="submit" style={{ padding: '10px' }}>Submit</button>
+        {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
       </form>
       {messages.map((message) => (
         <div key={message.id} className="submission">
