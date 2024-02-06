@@ -24,6 +24,10 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!text.trim()) {
+      console.error('Cannot submit an empty message');
+      return; // Exit the function early if text is empty or whitespace
+    }
     let address = "No location";
     
     if (navigator.geolocation) {
@@ -78,6 +82,19 @@ function App() {
         />
         <button type="submit" style={{ padding: '10px' }}>Submit</button>
       </form>
+      {/* <div className="messages-container">
+        {messages.filter(message => message.text && message.text.trim()).map((message) => (
+          <div key={message.id} className="submission">
+            <div className="submission-header">
+              <span>{message.username ? `@${message.username}` : 'Anonymous'}</span>
+            </div>
+            <div className="submission-content">
+              <p>{message.text}</p>
+              <small>{new Date(message.timestamp).toLocaleString()} - {message.address}</small>
+            </div>
+          </div>
+        ))}
+      </div> */}
       {messages.map((message) => (
         <div key={message.id} className="submission">
           <div className="submission-header">

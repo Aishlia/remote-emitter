@@ -2,55 +2,57 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Allows the form to stay at the top */
   min-height: 100vh;
   font-family: Arial, sans-serif;
+  padding: 20px; /* Added padding for overall spacing */
 }
 
 input, button {
   font-size: 16px;
+  padding: 10px;
+  margin: 5px 0; /* Ensures spacing around form elements */
 }
 
-div {
-  max-width: 600px;
-  margin: auto;
+.messages-container {
+  max-height: 400px;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 600px; /* Matches the submissions width */
+  border: 1px solid #ccc;
+  margin-top: 20px;
+  padding: 10px; /* Padding inside the container for visual spacing */
 }
 
 .submission {
   border: 1px solid #ddd;
-  padding: 40px;
+  padding: 20px;
   border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-top: 10px;
   background-color: #fff;
-  position: relative; /* Needed for positioning the header */
+  margin-bottom: 10px; /* Space between messages */
+  position: relative; /* Required for absolute positioning of the header */
 }
 
 .submission-header {
   position: absolute;
-  top: -10px; /* Adjust as needed to move outside the box */
-  left: 10px; /* Adjust based on padding */
-  background-color: #fff; /* Match the submission box or use a contrasting color */
-  padding: 0 5px; /* Small padding around the username */
-  border-radius: 3px; /* Optional: rounded corners for the label background */
+  top: -10px;
+  left: 10px;
+  background-color: #fff; /* Adjust if you want the label to stand out */
+  padding: 0 5px;
+  border-radius: 3px; /* Rounded corners for the label */
   font-weight: bold;
-  color: #007bff; /* Example color */
+  color: #007bff; /* Color for the username */
 }
 
 .submission p {
-  margin: 0; /* Remove default margin */
-  color: #333; /* Darker text for better readability */
-  font-size: 16px; /* Slightly larger text */
+  margin: 0 0 10px 0; /* Spacing between paragraphs and the small element */
+  color: #333;
+  font-size: 16px;
 }
 
 .submission small {
-  display: block; /* Each small element on its own line */
-  margin-top: 5px; /* Space above timestamp and address */
-  color: #666; /* Lighter text for less emphasis */
-  font-size: 12px; /* Smaller text size */
-}
-
-.submission p:first-child {
-  margin-bottom: 5px; /* Add space between username and text */
-  color: #000000; /* Example color */
+  display: block;
+  color: #666;
+  font-size: 12px;
 }
