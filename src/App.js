@@ -8,6 +8,7 @@ function App() {
   const [text, setText] = useState('');
   const [username, setUsername] = useState('');
   const [messages, setMessages] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
@@ -28,7 +29,21 @@ function App() {
       console.error('Cannot submit an empty message');
       return; // Exit the function early if text is empty or whitespace
     }
+
+    setErrorMessage('');
+
+    if (!text.trim()) {
+      console.error('Cannot submit an empty message');
+      return;
+    }
+
+    if (text.length > 800) {
+      setErrorMessage('Text submissions are limited to 800 characters.');
+      return; // Prevent submission if the text is too long (800 char limit)
+    }
+
     let address = "No location";
+
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (position) => {
@@ -81,6 +96,7 @@ function App() {
           style={{ marginRight: '10px', padding: '10px' }}
         />
         <button type="submit" style={{ padding: '10px' }}>Submit</button>
+        {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
       </form>
       {/* <div className="messages-container">
         {messages.filter(message => message.text && message.text.trim()).map((message) => (
