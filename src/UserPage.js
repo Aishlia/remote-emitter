@@ -26,9 +26,26 @@ function UserPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!text.trim()) {
+        setErrorMessage('Cannot submit an empty message');
+        return; // Exit the function early if text is empty or whitespace
+    }
+
     if (!text.trim() || text.length > 800) {
-      setErrorMessage('Cannot submit an empty message and text submissions are limited to 800 characters.');
+      setErrorMessage('Text submissions are limited to 800 characters.');
       return;
+    }
+
+    // Check for duplicate message within the last minute
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    const isDuplicateRecentMessage = messages.some(message => 
+        message.text === text && message.timestamp >= oneMinuteAgo
+    );
+
+    if (isDuplicateRecentMessage) {
+        setErrorMessage("Sorry, this message was already posted in the last minute.");
+        return; // Prevent submission of duplicate message
     }
 
     let address = "No location";
