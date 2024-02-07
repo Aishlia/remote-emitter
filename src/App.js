@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import HomePage from './HomePage';
 import UserPage from './UserPage';
+import CityPage from './CityPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/:username" element={<UserPage />} />
+          <Route path="/city/:city" element={<CityPage />} />
         </Routes>
       </div>
     </Router>
