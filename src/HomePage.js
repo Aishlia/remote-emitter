@@ -6,6 +6,9 @@ import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { extractCity } from './utils';
 
+const adjectives = ["Fast", "Silent", "Wandering", "Ancient", "Mystic","Adventurous", "Beautiful", "Courageous", "Determined", "Energetic", "Fearless", "Generous", "Honest", "Innovative", "Joyful", "Kind", "Loyal", "Motivated", "Nurturing", "Optimistic", "Passionate", "Quirky", "Resilient", "Strong", "Thoughtful", "Unique", "Vibrant", "Wise", "Xenial", "Youthful", "Zealous"];
+const nouns = ["Traveler", "Knight", "Wanderer", "Sage", "Hunter","Architect", "Bee", "Cat", "Dolphin", "Elephant", "Falcon", "Giraffe", "Helicopter", "Island", "Jewel", "Koala", "Lion", "Mountain", "Nebula", "Owl", "Piano", "Quokka", "Robot", "Star", "Tree", "Unicorn", "Volcano", "Whale", "Xenops", "Yacht", "Zebra"];
+
 function HomePage() {
   const [text, setText] = useState('');
   const [username, setUsername] = useState('');
@@ -21,6 +24,15 @@ function HomePage() {
       }));
       setMessages(msgs);
     });
+
+    let storedUsername = localStorage.getItem('username');
+    if (!storedUsername) {
+      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      storedUsername = `${randomAdjective}${randomNoun}${Math.floor(Math.random() * 100)}`;
+      localStorage.setItem('username', storedUsername);
+    }
+    setUsername(storedUsername);
 
     return () => unsubscribe();
   }, []);
