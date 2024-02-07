@@ -2,31 +2,51 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* Allows the form to stay at the top */
+  justify-content: flex-start;
   min-height: 100vh;
   font-family: Arial, sans-serif;
-  padding: 20px; /* Added padding for overall spacing */
+  padding: 20px;
 }
 
 input, button {
   font-size: 16px;
   padding: 10px;
-  margin: 5px 0; /* Ensures spacing around form elements */
+  margin: 5px 0;
+  border: 2px solid #e0e0e0;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+input {
+  width: calc(100% - 300px);
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 
 .messages-container {
   max-height: 400px;
   overflow-y: auto;
   width: 100%;
-  max-width: 600px; /* Matches the submissions width */
+  max-width: 600px;
   border: 1px solid #ccc;
   margin-top: 20px;
-  padding: 10px; /* Padding inside the container for visual spacing */
+  padding: 10px;
 }
 
 .submission {
-  width: 600px; /* Fixed width */
-  max-width: 100%; /* Ensures responsiveness */
+  width: 600px;
+  max-width: 100%;
   border: 1px solid #ddd;
   padding: 20px;
   border-radius: 5px;
@@ -34,22 +54,22 @@ input, button {
   background-color: #fff;
   margin-bottom: 10px;
   position: relative;
-  overflow-wrap: break-word; /* Ensures text breaks within the box */
+  overflow-wrap: break-word;
 }
 
 .submission-header {
   position: absolute;
   top: -10px;
   left: 10px;
-  background-color: #fff; /* Adjust if you want the label to stand out */
+  background-color: #fff;
   padding: 0 5px;
-  border-radius: 3px; /* Rounded corners for the label */
+  border-radius: 3px;
   font-weight: bold;
-  color: #007bff; /* Color for the username */
+  color: #007bff;
 }
 
 .submission p {
-  margin: 0 0 10px 0; /* Spacing between paragraphs and the small element */
+  margin: 0 0 10px 0;
   color: #333;
   font-size: 16px;
 }
@@ -60,48 +80,41 @@ input, button {
   font-size: 12px;
 }
 
-.username-link {
-  text-decoration: none; /* Removes the underline */
-  color: #007bff; /* Sets the link color to blue */
+.username-link, .username-link:visited {
+  text-decoration: none;
+  color: #007bff;
 }
 
-.username-link:visited {
-  color: #007bff; /* Keeps the link color blue even after it's been visited */
-}
-
-/* Media query for devices with widths up to 600px */
 @media (max-width: 600px) {
   .messages-container, .submission {
-    width: auto; /* Resets any specific width to default */
+    width: auto;
   }
 
   .submission {
-    padding: 20px 10px; /* Increase vertical padding, reduce horizontal padding */
-    box-sizing: border-box; /* Ensures padding is included in the width */
+    padding: 20px 10px;
+    box-sizing: border-box;
   }
 
   input, button {
-    width: calc(100% - 20px); /* Adjust the width to account for padding */
-    box-sizing: border-box; /* Ensures padding does not add to the width */
+    width: calc(100% - 20px);
+    box-sizing: border-box;
   }
 
-  /* Additional adjustments for spacing and layout */
   .App {
-    padding: 0 10px; /* Add horizontal padding */
+    padding: 0 10px;
   }
 
   .submission-header {
-    font-size: 14px; /* Smaller font size for the username */
-    top: 10px; /* Adjust top position */
-    left: 10px; /* Adjust left position */
+    font-size: 14px;
+    top: 10px;
+    left: 10px;
   }
 
   .submission p, .submission small {
-    font-size: 14px; /* Smaller font size for readability */
+    font-size: 14px;
   }
 
-  /* This will ensure that the message text does not overflow its container */
   .submission p {
-    word-wrap: break-word; /* CSS property for breaking long words */
+    word-wrap: break-word;
   }
 }
