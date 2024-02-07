@@ -4,6 +4,7 @@ import './App.css';
 import { collection, query, onSnapshot, addDoc, orderBy } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
+import { extractCity } from './utils';
 
 function HomePage() {
   const [text, setText] = useState('');
@@ -51,25 +52,35 @@ function HomePage() {
     let address = "No location";
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          address = response.data.display_name || "Address not found";
-        } catch (error) {
-          console.error("Error fetching address: ", error);
-        }
-        finally {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            const addressComponents = response.data.address;
+            const formattedAddress = {
+              house_number: addressComponents.house_number || '',
+              road: addressComponents.road || '',
+              city: addressComponents.city || addressComponents.town || addressComponents.village || '',
+              state: addressComponents.state || '',
+              postcode: addressComponents.postcode || '',
+              country: addressComponents.country || ''
+            };
+            // Construct a string or object as needed
+            address = `${formattedAddress.house_number} ${formattedAddress.road}, ${formattedAddress.city}, ${formattedAddress.state}, ${formattedAddress.postcode}, ${formattedAddress.country}`;
+          } catch (error) {
+            console.error("Error fetching address: ", error);
+          }
+          finally {
+            await addMessage(address);
+          }
+        }, async () => {
+          // Error callback or when access to location is denied
           await addMessage(address);
-        }
-      }, async () => {
-        // Error callback or when access to location is denied
+        });
+      } else {
+        console.error('Geolocation is not supported by your browser');
         await addMessage(address);
-      });
-    } else {
-      console.error('Geolocation is not supported by your browser');
-      await addMessage(address);
-    }
+      }      
   };
 
   const addMessage = async (address) => {
@@ -113,8 +124,20 @@ function HomePage() {
           <Link to={`/${message.username}`} className="username-link">{message.username ? `@${message.username}` : 'Anonymous'}</Link>
           </div>
           <div className="submission-content">
-            <p>{message.text}</p>
-            <small>{new Date(message.timestamp).toLocaleString()} - {message.address}</small>
+          <p>{message.text}</p>
+            <small>{new Date(message.timestamp).toLocaleString()} - {
+                (() => {
+                const city = extractCity(message.address);
+                const cityLink = city ? `/city/${encodeURIComponent(city.trim())}` : '';
+                return (
+                    <>
+                    {message.address.split(city)[0]}
+                    {city && <Link to={cityLink} className="location-link">{city}</Link>}
+                    {message.address.split(city)[1]}
+                    </>
+                );
+                })()
+            }</small>
           </div>
         </div>
       ))}
