@@ -68,3 +68,40 @@ input, button {
 .username-link:visited {
   color: #007bff; /* Keeps the link color blue even after it's been visited */
 }
+
+/* Media query for devices with widths up to 600px */
+@media (max-width: 600px) {
+  .messages-container, .submission {
+    width: auto; /* Resets any specific width to default */
+  }
+
+  .submission {
+    padding: 20px 10px; /* Increase vertical padding, reduce horizontal padding */
+    box-sizing: border-box; /* Ensures padding is included in the width */
+  }
+
+  input, button {
+    width: calc(100% - 20px); /* Adjust the width to account for padding */
+    box-sizing: border-box; /* Ensures padding does not add to the width */
+  }
+
+  /* Additional adjustments for spacing and layout */
+  .App {
+    padding: 0 10px; /* Add horizontal padding */
+  }
+
+  .submission-header {
+    font-size: 14px; /* Smaller font size for the username */
+    top: 10px; /* Adjust top position */
+    left: 10px; /* Adjust left position */
+  }
+
+  .submission p, .submission small {
+    font-size: 14px; /* Smaller font size for readability */
+  }
+
+  /* This will ensure that the message text does not overflow its container */
+  .submission p {
+    word-wrap: break-word; /* CSS property for breaking long words */
+  }
+}
