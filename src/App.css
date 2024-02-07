@@ -85,6 +85,11 @@ button:hover {
   color: #007bff;
 }
 
+a[href^="/"]:not(.location-link) {
+  text-decoration: none;
+  color: #007bff;
+}
+
 @media (max-width: 600px) {
   .messages-container, .submission {
     width: auto;

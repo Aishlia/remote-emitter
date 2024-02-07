@@ -4,7 +4,7 @@ import './App.css';
 import { collection, query, onSnapshot, addDoc, orderBy } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
-import { extractCity } from './utils';
+import { extractCity, parseMessage } from './utils';
 
 const adjectives = ["Fast", "Silent", "Wandering", "Ancient", "Mystic","Adventurous", "Beautiful", "Courageous", "Determined", "Energetic", "Fearless", "Generous", "Honest", "Innovative", "Joyful", "Kind", "Loyal", "Motivated", "Nurturing", "Optimistic", "Passionate", "Quirky", "Resilient", "Strong", "Thoughtful", "Unique", "Vibrant", "Wise", "Xenial", "Youthful", "Zealous"];
 const nouns = ["Traveler", "Knight", "Wanderer", "Sage", "Hunter","Architect", "Bee", "Cat", "Dolphin", "Elephant", "Falcon", "Giraffe", "Helicopter", "Island", "Jewel", "Koala", "Lion", "Mountain", "Nebula", "Owl", "Piano", "Quokka", "Robot", "Star", "Tree", "Unicorn", "Volcano", "Whale", "Xenops", "Yacht", "Zebra"];
@@ -136,7 +136,7 @@ function HomePage() {
           <Link to={`/${message.username}`} className="username-link">{message.username ? `@${message.username}` : 'Anonymous'}</Link>
           </div>
           <div className="submission-content">
-          <p>{message.text}</p>
+          <p dangerouslySetInnerHTML={{ __html: parseMessage(message.text) }}></p>
             <small>{new Date(message.timestamp).toLocaleString()} - {
                 (() => {
                 const city = extractCity(message.address);
