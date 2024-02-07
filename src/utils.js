@@ -12,4 +12,3 @@ export function parseMessage(text) {
       .replace(userRegex, '<a href="/$1">@$1</a>')
       .replace(hashTagRegex, '<a href="/tag/$1">#$1</a>');
   }
-  

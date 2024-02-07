@@ -8,6 +8,7 @@ import {
 import HomePage from './HomePage';
 import UserPage from './UserPage';
 import CityPage from './CityPage';
+import TagPage from './TagPage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/:username" element={<UserPage />} />
           <Route path="/city/:city" element={<CityPage />} />
+          <Route path="/tag/:tag" element={<TagPage />} />
         </Routes>
       </div>
     </Router>
