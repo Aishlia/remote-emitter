@@ -8,30 +8,17 @@
   padding: 20px;
 }
 
-input, button {
+input, .input-with-icon textarea {
   font-size: 16px;
-  padding: 10px;
+  padding: 10px 40px 10px 10px;
   margin: 5px 0;
   border: 2px solid #e0e0e0;
   background-color: #fff;
   border-radius: 4px;
-}
-
-input {
-  width: calc(100% - 300px);
+  width: 100%;
   box-sizing: border-box;
-}
-
-button {
-  cursor: pointer;
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  transition: background-color 0.3s ease;
-}
-
-button:hover {
-  background-color: #0056b3;
+  resize: none;
+  overflow-y: hidden;
 }
 
 .messages-container {
@@ -55,12 +42,13 @@ button:hover {
   margin-bottom: 10px;
   position: relative;
   overflow-wrap: break-word;
+  align-items: center;
 }
 
 .submission-header {
   position: absolute;
   top: -10px;
-  left: 10px;
+  left: 20px; /* Adjusted from 10px to 20px to prevent cropping */
   background-color: #fff;
   padding: 0 5px;
   border-radius: 3px;
@@ -68,64 +56,90 @@ button:hover {
   color: #007bff;
 }
 
-.submission p {
-  margin: 0 0 10px 0;
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 80%;
+  max-width: 800px;
+  margin: auto;
+}
+
+.input-with-icon .submit-icon {
+  cursor: pointer;
+  position: absolute;
+  right: 10px;
+  color: #007bff;
+  font-size: 20px;
+  background-color: transparent;
+}
+
+.submission p, .submission small {
   color: #333;
+  margin: 0 0 10px 0;
   font-size: 16px;
 }
 
 .submission small {
-  display: block;
   color: #666;
   font-size: 12px;
 }
 
-.username-link, .username-link:visited {
+.username-link, .username-link:visited, a[href^="/"]:not(.location-link), a[href^="/tag/"] {
   text-decoration: none;
   color: #007bff;
-}
-
-a[href^="/"]:not(.location-link) {
-  text-decoration: none;
-  color: #007bff;
-}
-
-a[href^="/tag/"] {
-  text-decoration: none;
-  color: #007bff;
-  cursor: pointer; 
+  cursor: pointer;
 }
 
 @media (max-width: 600px) {
-  .messages-container, .submission {
-    width: auto;
-  }
-
-  .submission {
-    padding: 20px 10px;
-    box-sizing: border-box;
-  }
-
-  input, button {
-    width: calc(100% - 20px);
-    box-sizing: border-box;
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
   }
 
   .App {
-    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .submission-header {
-    font-size: 14px;
-    top: 10px;
-    left: 10px;
+  input, .input-with-icon textarea {
+    width: 100%; /* Ensure they don't extend beyond the viewport */
+    margin: 5px 0; /* Adjust if necessary */
+    padding: 10px;
+    box-sizing: border-box; /* Include padding in the width calculation */
   }
 
-  .submission p, .submission small {
-    font-size: 14px;
+  .messages-container, .submission {
+    width: 100vw; /* Full width but within viewport */
+    box-sizing: border-box;
+    padding: 10px;
+    margin: 0 auto; /* Center these elements */
+    margin-bottom: 20px; /* Space between messages */
   }
 
-  .submission p {
-    word-wrap: break-word;
+  .input-with-icon {
+    width: 100%; /* Full width */
+    display: flex;
+    justify-content: center; /* Center children */
+    position: relative; /* For absolute positioning of the icon */
+  }
+
+  .input-with-icon .submit-icon {
+    position: absolute;
+    right: 30px; /* Adjust to not overlap the text */
+    pointer-events: auto; /* Ensure it's clickable */
+  }
+
+  .input-with-icon textarea {
+    width: calc(100% - 40px); /* Adjust width to prevent overflow */
+    padding: 10px;
+    padding-right: 50px; /* Space for the icon */
+    box-sizing: border-box;
   }
 }

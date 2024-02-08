@@ -109,22 +109,29 @@ function HomePage() {
     }
   };
 
+  const handleInput = (e) => {
+    e.target.style.height = 'auto'; // Reset height to auto to reduce it if needed
+    e.target.style.height = e.target.scrollHeight + 'px'; // Set new height based on scroll height
+  };
+
   return (
     <div style={{ textAlign: 'center' }}>
-      <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
-        <div style={{ marginBottom: '20px' }}>
-          <strong>@{username}</strong> {/* Display the generated username here */}
-        </div>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Enter text here"
-          style={{ marginRight: '10px', padding: '10px' }}
-        />
-        <button type="submit" style={{ padding: '10px' }}>Submit</button>
-        {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
-      </form>
+    <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <strong>@{username}</strong> {/* Display the generated username here */}
+      </div>
+      <div className="input-with-icon">
+      <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onInput={handleInput}
+            placeholder="Enter text here"
+            rows="1" // Start with a single line
+          />
+        <i onClick={handleSubmit} className="submit-icon">→</i>
+      </div>
+      {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
+    </form>
       {messages.map((message) => (
         <div key={message.id} className="submission">
             <div className="submission-header">
