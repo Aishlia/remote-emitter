@@ -1,7 +1,7 @@
 // UserPage.js
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, orderBy, query, onSnapshot, where } from "firebase/firestore";
+import { collection, query, onSnapshot, where } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
@@ -9,32 +9,94 @@ import { parseMessage, extractStreet, extractZip } from './utils';
 function UserPage() {
     const [messages, setMessages] = useState([]);
     const [viewMode, setViewMode] = useState('posts'); // 'posts' or 'mentions'
+    const [topHashtags, setTopHashtags] = useState([]);
     const { username } = useParams();
   
     useEffect(() => {
       let q;
       if (viewMode === 'posts') {
-        q = query(collection(db, "messages"), where("username", "==", username), orderBy("timestamp", "desc"));
-      } else {
-        q = query(collection(db, "messages"), where("mentions", "array-contains", username), orderBy("timestamp", "desc"));
+        q = query(collection(db, "messages"), where("username", "==", username));
+      } else { // 'mentions'
+        q = query(collection(db, "messages"), where("mentions", "array-contains", username));
       }
   
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const msgs = querySnapshot.docs.map(doc => ({
           ...doc.data(),
-          id: doc.id
+          id: doc.id,
         }));
         setMessages(msgs);
+        // Aggregate and calculate top hashtags
+        const allHashtags = msgs.flatMap(msg => msg.hashtags || []);
+        const hashtagFrequency = allHashtags.reduce((acc, hashtag) => {
+          acc[hashtag] = (acc[hashtag] || 0) + 1;
+          return acc;
+        }, {});
+        const sortedHashtags = Object.entries(hashtagFrequency).sort((a, b) => b[1] - a[1]).slice(0, 3);
+        setTopHashtags(sortedHashtags);
       });
   
       return () => unsubscribe();
     }, [username, viewMode]);
-
-    return (
+  
+    const commonButtonStyle = {
+        display: 'inline-block', // Ensures that the width property is respected
+        textAlign: 'center',
+        border: 'none',
+        margin: '0 10px', // Adds some space between buttons
+        borderRadius: '20px', // Gives an oval shape suitable for longer text
+        cursor: 'pointer',
+        transition: 'all 0.3s ease', // Smooth transition for background and transform changes
+        width: '120px', // Fixed width to ensure both buttons are the same size
+        height: '40px', // Fixed height to maintain aspect ratio
+        lineHeight: '40px', // Vertically centers text within the button
+        fontSize: '16px', // Consistent font size
+      };
+    
+      const activeButtonStyle = {
+        ...commonButtonStyle,
+        backgroundColor: '#007bff', // Primary color for active button
+        color: 'white',
+        transform: 'scale(1.05)', // Slightly enlarges the active button
+      };
+    
+      const inactiveButtonStyle = {
+        ...commonButtonStyle,
+        backgroundColor: 'rgba(0, 123, 255, 0.5)', // Faded blue for the inactive button
+        color: 'white',
+        opacity: '0.7',
+      };
+    
+      return (
         <div style={{ textAlign: 'center' }}>
-          <h2>{viewMode === 'posts' ? `Posts by @${username}` : `Mentions of @${username}`}</h2>
-          <button className="button" onClick={() => setViewMode('posts')}>Posts</button>
-          <button className="button" onClick={() => setViewMode('mentions')}>Mentions</button>
+    <h2>{viewMode === 'posts' ? `@${username}` : `@${username}`}</h2>
+    <div
+      style={{
+        marginBottom: topHashtags.length === 0 ? '20px' : '0', // Conditionally apply bottom margin
+      }}
+    >
+      <button
+        style={viewMode === 'posts' ? activeButtonStyle : inactiveButtonStyle}
+        onClick={() => setViewMode('posts')}
+      >
+        Posts
+      </button>
+      <button
+        style={viewMode === 'mentions' ? activeButtonStyle : inactiveButtonStyle}
+        onClick={() => setViewMode('mentions')}
+      >
+        Mentions
+      </button>
+          </div>
+        {topHashtags.length > 0 && (
+          <div>
+            {topHashtags.map(([hashtag, count]) => (
+              <div key={hashtag} style={{margin: "10px 0"}}>
+                <span style={{fontWeight: "bold"}}>#{hashtag}</span> <span style={{color: "#999"}}>({count})</span>
+              </div>
+            ))}
+          </div>
+        )}
           {messages.length > 0 ? (
             messages.map((message) => (
               <div key={message.id} className="submission">

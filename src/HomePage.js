@@ -129,12 +129,6 @@ function HomePage() {
       setErrorMessage('Failed to send message. Please try again.');
     }
   };
-  
-
-  const handleInput = (e) => {
-    e.target.style.height = 'auto'; // Reset height to auto to reduce it if needed
-    e.target.style.height = e.target.scrollHeight + 'px'; // Set new height based on scroll height
-  };
 
   return (
     <div style={{ textAlign: 'center' }}>
