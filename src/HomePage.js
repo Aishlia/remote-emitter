@@ -37,8 +37,16 @@ function HomePage() {
     return () => unsubscribe();
   }, []);
 
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault(); // Prevent the default action (insert newline)
+      handleSubmit(); // Call your submit function
+    }
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    // e.preventDefault();
 
     if (!text.trim()) {
       setErrorMessage('Cannot submit an empty message');
@@ -97,7 +105,20 @@ function HomePage() {
 
   const addMessage = async (address) => {
     const timestamp = new Date().toISOString();
-    const message = { username: username || "Anonymous", text, timestamp, address };
+    // Extract mentions and hashtags from the text
+    const mentionRegex = /@(\w+)/g; // Simple regex to match mentions like @username
+    const hashtagRegex = /#(\w+)/g; // Simple regex to match hashtags like #hashtag
+    const mentions = [...text.matchAll(mentionRegex)].map(match => match[1]);
+    const hashtags = [...text.matchAll(hashtagRegex)].map(match => match[1]);
+    
+    const message = {
+      username: username || "Anonymous",
+      text,
+      timestamp,
+      address,
+      mentions,
+      hashtags,
+    };
     
     try {
       await addDoc(collection(db, "messages"), message);
@@ -108,6 +129,7 @@ function HomePage() {
       setErrorMessage('Failed to send message. Please try again.');
     }
   };
+  
 
   const handleInput = (e) => {
     e.target.style.height = 'auto'; // Reset height to auto to reduce it if needed
@@ -124,7 +146,7 @@ function HomePage() {
       <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onInput={handleInput}
+            onKeyDown={handleKeyDown}
             placeholder="Enter text here"
             rows="1" // Start with a single line
           />

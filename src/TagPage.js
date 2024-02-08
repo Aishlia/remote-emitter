@@ -1,7 +1,7 @@
 // TagPage.js
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, query, onSnapshot } from "firebase/firestore";
+import { collection, query, onSnapshot, where, orderBy } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
@@ -11,14 +11,17 @@ function TagPage() {
   const { tag } = useParams(); // This gets the tag from the URL
 
   useEffect(() => {
-    const q = query(collection(db, "messages"));
+    const q = query(collection(db, "messages"), where("hashtags", "array-contains", tag), orderBy("timestamp", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const taggedMessages = querySnapshot.docs.map(doc => doc.data()).filter(message => message.text.includes(`#${tag}`));
+      const taggedMessages = querySnapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      }));
       setMessages(taggedMessages);
     });
-
+  
     return () => unsubscribe();
-  }, [tag]);
+  }, [tag]);  
 
   return (
     <div style={{ textAlign: 'center' }}>
