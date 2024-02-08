@@ -132,15 +132,34 @@ function HomePage() {
       </form>
       {messages.map((message) => (
         <div key={message.id} className="submission">
-          <div className="submission-header">
-          <Link to={`/${message.username}`} className="username-link">{message.username ? `@${message.username}` : 'Anonymous'}</Link>
-          </div>
-          <div className="submission-content">
-          <p dangerouslySetInnerHTML={{ __html: parseMessage(message.text) }}></p>
-          <small>{new Date(message.timestamp).toLocaleString()} - {extractStreet(message.address)}, {extractZip(message.address)}</small>
-          </div>
+            <div className="submission-header">
+            <Link to={`/${message.username}`} className="username-link">{message.username ? `@${message.username}` : 'Anonymous'}</Link>
+            </div>
+            <div className="submission-content">
+            <p dangerouslySetInnerHTML={{ __html: parseMessage(message.text) }}></p>
+            <small>
+                {new Date(message.timestamp).toLocaleDateString('en-US', {
+                month: 'numeric',
+                day: 'numeric',
+                }) + ' ' + new Date(message.timestamp).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+                }) + ' '}
+                {/* Extract street and zip and check if both exist, else display "No Location" */}
+                - {(() => {
+                const street = extractStreet(message.address);
+                const zip = extractZip(message.address);
+                if (street && zip) {
+                    return `${street}, ${zip}`;
+                } else {
+                    return "No Location";
+                }
+                })()}
+            </small>
+            </div>
         </div>
-      ))}
+        ))}
     </div>
   );
 }
