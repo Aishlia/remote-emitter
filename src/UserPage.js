@@ -1,14 +1,15 @@
 // UserPage.js
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, addDoc, orderBy, query, onSnapshot, where } from "firebase/firestore";
+// import { collection, addDoc, orderBy, query, onSnapshot, where } from "firebase/firestore";
+import { collection, orderBy, query, onSnapshot, where } from "firebase/firestore";
 import { db } from './firebase-config';
-import axios from 'axios';
+// import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { extractStreet, extractZip } from './utils';
 
 function UserPage() {
-  const [text, setText] = useState('');
+//   const [text, setText] = useState('');
   const [messages, setMessages] = useState([]);
 //   const [errorMessage, setErrorMessage] = useState('');
   const { username } = useParams(); // This gets the username from the URL
