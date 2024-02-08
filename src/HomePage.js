@@ -134,7 +134,7 @@ function HomePage() {
     <div style={{ textAlign: 'center' }}>
     <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
       <div style={{ marginBottom: '20px' }}>
-        <strong>@{username}</strong> {/* Display the generated username here */}
+      <Link to={`/${username}`} className="main-username-link">@{username}</Link>
       </div>
       <div className="input-with-icon">
       <textarea

@@ -85,10 +85,17 @@ input, .input-with-icon textarea {
   font-size: 12px;
 }
 
-.username-link, .username-link:visited, a[href^="/"]:not(.location-link), a[href^="/tag/"] {
+.username-link, .username-link:visited, a[href^="/"]:not(.main-username-link), a[href^="/tag/"] {
   text-decoration: none;
   color: #007bff;
   cursor: pointer;
+}
+
+.main-username-link {
+  text-decoration: none; /* Removes underline */
+  color: #000;
+  cursor: pointer; /* Changes cursor to indicate clickability */
+  font-weight: bold; /* Ensures the username appears bold */
 }
 
 .button-group {
