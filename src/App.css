@@ -91,11 +91,45 @@ input, .input-with-icon textarea {
   cursor: pointer;
 }
 
+.button {
+  background-color: #007bff; /* Primary color */
+  color: white; /* Text color */
+  border: none;
+  padding: 10px 20px; /* Vertical and horizontal padding */
+  margin: 5px; /* Margin around buttons */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer; /* Change cursor to indicate clickability */
+  font-size: 16px; /* Adequate font size for readability */
+  transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+  display: inline-block; /* Allows specifying width and keeps buttons in line */
+  min-width: 100px; /* Ensure a minimum width for all buttons */
+  text-align: center; /* Center the text inside the button */
+}
+
+.button:hover {
+  background-color: #0056b3; /* Slightly darker shade on hover */
+}
+
+.button:focus {
+  outline: none; /* Remove outline to maintain the clean look */
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.5); /* Subtle focus outline to maintain accessibility */
+}
+
+.button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
 @media (max-width: 600px) {
   html, body {
     margin: 0;
     padding: 0;
     overflow-x: hidden; /* Prevent horizontal scrolling */
+  }
+
+  .button {
+    padding: 8px 15px; /* Slightly smaller padding on smaller screens */
+    font-size: 14px; /* Adjust font size for smaller screens */
   }
 
   .App {
@@ -109,11 +143,18 @@ input, .input-with-icon textarea {
   }
 
   input, .input-with-icon textarea {
-    width: 100%; /* Ensure they don't extend beyond the viewport */
-    margin: 5px 0; /* Adjust if necessary */
-    padding: 10px;
-    box-sizing: border-box; /* Include padding in the width calculation */
+    font-size: 16px;
+    padding: 10px 40px 15px 10px; /* Increased bottom padding from 10px to 15px */
+    margin: 5px 0 20px 0; /* Added bottom margin for extra space */
+    border: 2px solid #e0e0e0;
+    background-color: #fff;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    overflow-y: hidden;
   }
+  
 
   .messages-container, .submission {
     width: 100vw; /* Full width but within viewport */
