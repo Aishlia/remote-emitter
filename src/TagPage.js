@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { collection, query, onSnapshot } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
+import { extractZip, extractStreet } from './utils'
 
 function TagPage() {
   const [messages, setMessages] = useState([]);
@@ -29,7 +30,7 @@ function TagPage() {
           </div>
           <div className="submission-content">
             <p>{message.text}</p>
-            <small>{new Date(message.timestamp).toLocaleString()}</small>
+            <small>{new Date(message.timestamp).toLocaleString()} - {extractStreet(message.address)}, {extractZip(message.address)}</small>
           </div>
         </div>
       ))}

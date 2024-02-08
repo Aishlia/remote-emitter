@@ -4,7 +4,7 @@ import './App.css';
 import { collection, query, onSnapshot, addDoc, orderBy } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
-import { extractCity, parseMessage } from './utils';
+import { parseMessage, extractStreet, extractZip } from './utils';
 
 const adjectives = ["Fast", "Silent", "Wandering", "Ancient", "Mystic","Adventurous", "Beautiful", "Courageous", "Determined", "Energetic", "Fearless", "Generous", "Honest", "Innovative", "Joyful", "Kind", "Loyal", "Motivated", "Nurturing", "Optimistic", "Passionate", "Quirky", "Resilient", "Strong", "Thoughtful", "Unique", "Vibrant", "Wise", "Xenial", "Youthful", "Zealous"];
 const nouns = ["Traveler", "Knight", "Wanderer", "Sage", "Hunter","Architect", "Bee", "Cat", "Dolphin", "Elephant", "Falcon", "Giraffe", "Helicopter", "Island", "Jewel", "Koala", "Lion", "Mountain", "Nebula", "Owl", "Piano", "Quokka", "Robot", "Star", "Tree", "Unicorn", "Volcano", "Whale", "Xenops", "Yacht", "Zebra"];
@@ -137,19 +137,7 @@ function HomePage() {
           </div>
           <div className="submission-content">
           <p dangerouslySetInnerHTML={{ __html: parseMessage(message.text) }}></p>
-            <small>{new Date(message.timestamp).toLocaleString()} - {
-                (() => {
-                const city = extractCity(message.address);
-                const cityLink = city ? `/city/${encodeURIComponent(city.trim())}` : '';
-                return (
-                    <>
-                    {message.address.split(city)[0]}
-                    {city && <Link to={cityLink} className="location-link">{city}</Link>}
-                    {message.address.split(city)[1]}
-                    </>
-                );
-                })()
-            }</small>
+          <small>{new Date(message.timestamp).toLocaleString()} - {extractStreet(message.address)}, {extractZip(message.address)}</small>
           </div>
         </div>
       ))}

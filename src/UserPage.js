@@ -5,7 +5,7 @@ import { collection, addDoc, orderBy, query, onSnapshot, where } from "firebase/
 import { db } from './firebase-config';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { extractCity } from './utils';
+import { extractStreet, extractZip } from './utils';
 
 function UserPage() {
   const [text, setText] = useState('');
@@ -101,7 +101,7 @@ function UserPage() {
   return (
     <div style={{ textAlign: 'center' }}>
       <h2>Posts by @{username}</h2>
-      <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
+      {/* <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
         <input
           type="text"
           value={text}
@@ -111,7 +111,7 @@ function UserPage() {
         />
         <button type="submit" style={{ padding: '10px' }}>Submit</button>
         {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
-      </form>
+      </form>*/}
       {messages.map((message) => (
         <div key={message.id} className="submission">
           <div className="submission-header">
@@ -119,19 +119,7 @@ function UserPage() {
           </div>
           <div className="submission-content">
           <p>{message.text}</p>
-            <small>{new Date(message.timestamp).toLocaleString()} - {
-                (() => {
-                const city = extractCity(message.address);
-                const cityLink = city ? `/city/${encodeURIComponent(city.trim())}` : '';
-                return (
-                    <>
-                    {message.address.split(city)[0]}
-                    {city && <Link to={cityLink} className="location-link">{city}</Link>}
-                    {message.address.split(city)[1]}
-                    </>
-                );
-                })()
-            }</small>
+          <small>{new Date(message.timestamp).toLocaleString()} - {extractStreet(message.address)}, {extractZip(message.address)}</small>
           </div>
         </div>
       ))}
