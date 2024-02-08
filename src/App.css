@@ -67,8 +67,8 @@ input, .input-with-icon textarea {
 
 .input-with-icon .submit-icon {
   cursor: pointer;
-  position: absolute;
-  right: 10px;
+  position: relative;
+  right: 35px;
   color: #007bff;
   font-size: 20px;
   background-color: transparent;
@@ -103,9 +103,15 @@ input, .input-with-icon textarea {
 }
 
 .world-icon-link {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  position: relative;
+  top: 0px;
+  right: 0px;
+}
+
+.world-icon-link-user-page {
+  position: relative;
+  top: 0px;
+  right: 0px;
 }
 
 @media (max-width: 600px) {

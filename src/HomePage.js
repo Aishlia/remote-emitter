@@ -5,7 +5,7 @@ import { collection, query, onSnapshot, addDoc, orderBy } from "firebase/firesto
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
-import worldIcon from './assets/world-icon192.png';
+import worldIcon from './assets/world-icon192.svg';
 
 const adjectives = ["Fast", "Silent", "Wandering", "Ancient", "Mystic", "Adventurous", "Beautiful", "Courageous", "Determined", "Energetic", "Fearless", "Generous", "Honest", "Innovative", "Joyful", "Kind", "Loyal", "Motivated", "Nurturing", "Optimistic", "Passionate", "Quirky", "Resilient", "Strong", "Thoughtful", "Unique", "Vibrant", "Wise", "Xenial", "Youthful", "Zealous"];
 const nouns = ["Traveler", "Knight", "Wanderer", "Sage", "Hunter", "Architect", "Bee", "Cat", "Dolphin", "Elephant", "Falcon", "Giraffe", "Helicopter", "Island", "Jewel", "Koala", "Lion", "Mountain", "Nebula", "Owl", "Piano", "Quokka", "Robot", "Star", "Tree", "Unicorn", "Volcano", "Whale", "Xenops", "Yacht", "Zebra"];
@@ -129,10 +129,7 @@ function HomePage() {
   };
 
   return (
-    <div style={{ textAlign: 'center', position: 'relative'  }}>
-      <Link to={`/world-locations`} className="world-icon-link">
-          <img src={worldIcon} alt="World Locations" style={{ maxWidth: '40px' }}/>
-      </Link>
+    <div style={{ textAlign: 'center', position: 'relative' }}>
     <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
       <div style={{ marginBottom: '20px' }}>
       <Link to={`/${username}`} className="main-username-link">@{username}</Link>
@@ -146,6 +143,9 @@ function HomePage() {
             rows="1" // Start with a single line
           />
         <i onClick={handleSubmit} className="submit-icon">→</i>
+        <Link to={`/world-locations`} className="world-icon-link">
+          <img src={worldIcon} alt="World Locations" style={{ maxWidth: '40px' }}/>
+      </Link>
       </div>
       {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
     </form>
