@@ -69,45 +69,40 @@ function HomePage() {
         return; // Prevent submission of duplicate message
     }
 
-    let address = "No location";
+    let locationData = {
+      latitude: null,
+      longitude: null,
+      address: "No location"
+    };
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(async (position) => {
-          const { latitude, longitude } = position.coords;
+          locationData.latitude = position.coords.latitude;
+          locationData.longitude = position.coords.longitude;
           try {
-            const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${locationData.latitude}&lon=${locationData.longitude}`);
             const addressComponents = response.data.address;
-            const formattedAddress = {
-              house_number: addressComponents.house_number || '',
-              road: addressComponents.road || '',
-              city: addressComponents.city || addressComponents.town || addressComponents.village || '',
-              state: addressComponents.state || '',
-              postcode: addressComponents.postcode || '',
-              country: addressComponents.country || ''
-            };
-            // Construct a string or object as needed
-            address = `${formattedAddress.house_number} ${formattedAddress.road}, ${formattedAddress.city}, ${formattedAddress.state}, ${formattedAddress.postcode}, ${formattedAddress.country}`;
+            locationData.address = `${addressComponents.house_number || ''} ${addressComponents.road || ''}, ${addressComponents.city || addressComponents.town || addressComponents.village || ''}, ${addressComponents.state || ''}, ${addressComponents.postcode || ''}, ${addressComponents.country || ''}`;
           } catch (error) {
             console.error("Error fetching address: ", error);
           }
           finally {
-            await addMessage(address);
+            await addMessage(locationData);
           }
         }, async () => {
           // Error callback or when access to location is denied
-          await addMessage(address);
+          await addMessage(locationData);
         });
       } else {
         console.error('Geolocation is not supported by your browser');
-        await addMessage(address);
-      }      
+        await addMessage(locationData);
+    }       
   };
 
-  const addMessage = async (address) => {
+  const addMessage = async (locationData) => {
     const timestamp = new Date().toISOString();
-    // Extract mentions and hashtags from the text
-    const mentionRegex = /@(\w+)/g; // Simple regex to match mentions like @username
-    const hashtagRegex = /#(\w+)/g; // Simple regex to match hashtags like #hashtag
+    const mentionRegex = /@(\w+)/g;
+    const hashtagRegex = /#(\w+)/g;
     const mentions = [...text.matchAll(mentionRegex)].map(match => match[1]);
     const hashtags = [...text.matchAll(hashtagRegex)].map(match => match[1]);
     
@@ -115,7 +110,9 @@ function HomePage() {
       username: username || "Anonymous",
       text,
       timestamp,
-      address,
+      address: locationData.address,
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
       mentions,
       hashtags,
     };

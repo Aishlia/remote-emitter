@@ -5,6 +5,7 @@ import { collection, query, onSnapshot, where } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
+import worldIcon from './assets/world-icon192.png';
 
 function UserPage() {
     const [messages, setMessages] = useState([]);
@@ -68,8 +69,11 @@ function UserPage() {
       };
     
       return (
-        <div style={{ textAlign: 'center' }}>
-    <h2>{viewMode === 'posts' ? `@${username}` : `@${username}`}</h2>
+        <div style={{ textAlign: 'center', position: 'relative' }}> {/* Add position: 'relative' to enable absolute positioning of the icon */}
+        <Link to={`/${username}/world-locations`} className="world-icon-link">
+          <img src={worldIcon} alt="World Locations" style={{ maxWidth: '90px' }}/>
+      </Link>
+        <h2>{viewMode === 'posts' ? `@${username}` : `@${username}`}</h2>
     <div
       style={{
         marginBottom: topHashtags.length === 0 ? '20px' : '0', // Conditionally apply bottom margin

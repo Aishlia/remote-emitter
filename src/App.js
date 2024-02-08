@@ -10,6 +10,8 @@ import HomePage from './HomePage';
 import UserPage from './UserPage';
 import CityPage from './CityPage';
 import TagPage from './TagPage';
+import WorldLocationsPage from './WorldLocationsPage';
+import UserWorldLocationsPage from './UserWorldLocationsPage';
 import logo from './assets/logo192.png';
 
 function App() {
@@ -26,6 +28,8 @@ function App() {
           <Route path="/:username" element={<UserPage />} />
           <Route path="/city/:city" element={<CityPage />} />
           <Route path="/tag/:tag" element={<TagPage />} />
+          <Route path="/world-locations" element={<WorldLocationsPage />} />
+          <Route path="/:username/world-locations" element={<UserWorldLocationsPage />} />
         </Routes>
       </div>
     </Router>
