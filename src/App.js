@@ -3,17 +3,24 @@ import React from 'react';
 import {
   BrowserRouter as Router,
   Routes,
-  Route
+  Route,
+  Link
 } from 'react-router-dom';
 import HomePage from './HomePage';
 import UserPage from './UserPage';
 import CityPage from './CityPage';
 import TagPage from './TagPage';
+import logo from './assets/logo192.png';
 
 function App() {
   return (
     <Router>
       <div className="App">
+        <nav style={{ padding: '10px' }}>
+          <Link to="/">
+            <img src={logo} alt="Home" style={{ maxWidth: '100px', cursor: 'pointer' }} />
+          </Link>
+        </nav>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/:username" element={<UserPage />} />
@@ -24,5 +31,6 @@ function App() {
     </Router>
   );
 }
+
 
 export default App;
