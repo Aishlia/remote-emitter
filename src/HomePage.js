@@ -6,8 +6,8 @@ import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
 
-const adjectives = ["Fast", "Silent", "Wandering", "Ancient", "Mystic","Adventurous", "Beautiful", "Courageous", "Determined", "Energetic", "Fearless", "Generous", "Honest", "Innovative", "Joyful", "Kind", "Loyal", "Motivated", "Nurturing", "Optimistic", "Passionate", "Quirky", "Resilient", "Strong", "Thoughtful", "Unique", "Vibrant", "Wise", "Xenial", "Youthful", "Zealous"];
-const nouns = ["Traveler", "Knight", "Wanderer", "Sage", "Hunter","Architect", "Bee", "Cat", "Dolphin", "Elephant", "Falcon", "Giraffe", "Helicopter", "Island", "Jewel", "Koala", "Lion", "Mountain", "Nebula", "Owl", "Piano", "Quokka", "Robot", "Star", "Tree", "Unicorn", "Volcano", "Whale", "Xenops", "Yacht", "Zebra"];
+const adjectives = ["Fast", "Silent", "Wandering", "Ancient", "Mystic", "Adventurous", "Beautiful", "Courageous", "Determined", "Energetic", "Fearless", "Generous", "Honest", "Innovative", "Joyful", "Kind", "Loyal", "Motivated", "Nurturing", "Optimistic", "Passionate", "Quirky", "Resilient", "Strong", "Thoughtful", "Unique", "Vibrant", "Wise", "Xenial", "Youthful", "Zealous"];
+const nouns = ["Traveler", "Knight", "Wanderer", "Sage", "Hunter", "Architect", "Bee", "Cat", "Dolphin", "Elephant", "Falcon", "Giraffe", "Helicopter", "Island", "Jewel", "Koala", "Lion", "Mountain", "Nebula", "Owl", "Piano", "Quokka", "Robot", "Star", "Tree", "Unicorn", "Volcano", "Whale", "Xenops", "Yacht", "Zebra"];
 
 function HomePage() {
   const [text, setText] = useState('');
@@ -41,8 +41,8 @@ function HomePage() {
     e.preventDefault();
 
     if (!text.trim()) {
-        setErrorMessage('Cannot submit an empty message');
-        return; // Exit the function early if text is empty or whitespace
+      setErrorMessage('Cannot submit an empty message');
+      return; // Exit the function early if text is empty or whitespace
     }
 
     if (!text.trim() || text.length > 800) {
@@ -112,14 +112,9 @@ function HomePage() {
   return (
     <div style={{ textAlign: 'center' }}>
       <form onSubmit={handleSubmit} style={{ margin: '20px' }}>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter username"
-          style={{ marginRight: '10px', padding: '10px', marginBottom: '20px' }}
-        />
-        <br />
+        <div style={{ marginBottom: '20px' }}>
+          <strong>@{username}</strong> {/* Display the generated username here */}
+        </div>
         <input
           type="text"
           value={text}
