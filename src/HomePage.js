@@ -119,7 +119,7 @@ function HomePage() {
     };
     
       try {
-        const docRef = await addDoc(collection(db, "messages"), message);
+        await addDoc(collection(db, "messages"), message);
         // After successful message addition, add connections for mentions
         mentions.forEach(async (mention) => {
           const connection = {
