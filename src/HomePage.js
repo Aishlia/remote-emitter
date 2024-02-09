@@ -15,9 +15,47 @@ function HomePage() {
   const [username, setUsername] = useState('');
   const [messages, setMessages] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [viewMode, setViewMode] = useState('Global');
+  const [userTags, setUserTags] = useState([]); 
 
+  // Retrieve username from localStorage or assign new random username
   useEffect(() => {
-    const q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    } else {
+      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      const newUsername = `${randomAdjective}${randomNoun}${Math.floor(Math.random() * 100)}`;
+      localStorage.setItem('username', newUsername);
+      setUsername(newUsername);
+    }
+  }, []);
+
+  // Fetch user's interests once username is set
+  useEffect(() => {
+    if (username) {
+      const interestsRef = collection(db, "interests");
+      const q = query(interestsRef, where("userID", "==", username));
+      getDocs(q).then(querySnapshot => {
+        querySnapshot.forEach((doc) => {
+          setUserTags(doc.data().tags || []);
+        });
+      });
+    }
+  }, [username]);
+
+  // Show posts based on viewMode
+  useEffect(() => {
+    let q;
+    if (viewMode === 'Global') {
+      q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
+    } else if (viewMode === 'Home' && userTags.length > 0) {
+      q = query(collection(db, "messages"), where("hashtags", "array-contains-any", userTags), orderBy("timestamp", "desc"));
+    } else {
+      q = query(collection(db, "messages"), orderBy("timestamp", "desc"));
+    }
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const msgs = querySnapshot.docs.map(doc => ({
         ...doc.data(),
@@ -26,48 +64,28 @@ function HomePage() {
       setMessages(msgs);
     });
 
-    let storedUsername = localStorage.getItem('username');
-    if (!storedUsername) {
-      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-      storedUsername = `${randomAdjective}${randomNoun}${Math.floor(Math.random() * 100)}`;
-      localStorage.setItem('username', storedUsername);
-    }
-    setUsername(storedUsername);
-
     return () => unsubscribe();
-  }, []);
+  }, [viewMode, userTags]);
 
   const handleKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault(); // Prevent the default action (insert newline)
-      handleSubmit(); // Call your submit function
+      event.preventDefault();
+      handleSubmit();
     }
   };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    // e.preventDefault();
-
-    if (!text.trim()) {
-      setErrorMessage('Cannot submit an empty message');
-      return; // Exit the function early if text is empty or whitespace
-    }
-
     if (!text.trim() || text.length > 800) {
       setErrorMessage('Text submissions are limited to 800 characters.');
-      return; // Prevent submission if the text is empty or too long
+      return;
     }
 
-    // Check for duplicate message within the last minute
     const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-    const isDuplicateRecentMessage = messages.some(message => 
-        message.text === text && message.timestamp >= oneMinuteAgo
-    );
-
+    const isDuplicateRecentMessage = messages.some(message => message.text === text && message.timestamp >= oneMinuteAgo);
     if (isDuplicateRecentMessage) {
-        setErrorMessage("Sorry, this message was already posted in the last minute.");
-        return; // Prevent submission of duplicate message
+      setErrorMessage("Sorry, this message was already posted in the last minute.");
+      return;
     }
 
     let locationData = {
@@ -77,27 +95,22 @@ function HomePage() {
     };
 
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          locationData.latitude = position.coords.latitude;
-          locationData.longitude = position.coords.longitude;
-          try {
-            const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${locationData.latitude}&lon=${locationData.longitude}`);
-            const addressComponents = response.data.address;
-            locationData.address = `${addressComponents.house_number || ''} ${addressComponents.road || ''}, ${addressComponents.city || addressComponents.town || addressComponents.village || ''}, ${addressComponents.state || ''}, ${addressComponents.postcode || ''}, ${addressComponents.country || ''}`;
-          } catch (error) {
-            console.error("Error fetching address: ", error);
-          }
-          finally {
-            await addMessage(locationData);
-          }
-        }, async () => {
-          // Error callback or when access to location is denied
-          await addMessage(locationData);
-        });
-      } else {
-        console.error('Geolocation is not supported by your browser');
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        locationData.latitude = position.coords.latitude;
+        locationData.longitude = position.coords.longitude;
         await addMessage(locationData);
-    }       
+      }, async () => {
+        await addMessage(locationData);
+      });
+    } else {
+      console.error('Geolocation is not supported by your browser');
+      await addMessage(locationData);
+    }
+  };
+
+  const handleViewModeChange = (mode) => (event) => {
+    event.preventDefault();
+    setViewMode(mode);
   };
 
   const addMessage = async (locationData) => {
@@ -168,6 +181,14 @@ function HomePage() {
       </Link>
       </div>
       {errorMessage && <div style={{ color: 'red', marginTop: '10px' }}>{errorMessage}</div>}
+      <div style={{ margin: '10px 0' }}>
+      <button className={`button ${viewMode === 'Global' ? 'button-active' : 'button-inactive'}`} onClick={handleViewModeChange('Global')}>
+          Global
+        </button>
+        <button className={`button ${viewMode === 'Home' ? 'button-active' : 'button-inactive'}`} onClick={handleViewModeChange('Home')}>
+        Home
+        </button>
+      </div>
     </form>
       {messages.map((message) => (
         <div key={message.id} className="submission">

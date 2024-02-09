@@ -102,6 +102,33 @@ input, .input-with-icon textarea {
   margin-bottom: 40px; /* Adjust as needed */
 }
 
+.button {
+  display: inline-block;
+  text-align: center;
+  border: none;
+  margin: 0 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 120px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 16px;
+  color: white;
+}
+
+.button-active {
+  background-color: #007bff;
+  transform: scale(1.05);
+}
+
+.button-inactive {
+  background-color: rgba(0, 123, 255, 0.5);
+  opacity: 0.7;
+  transform: scale(1);
+}
+
+
 .world-icon-link {
   position: relative;
   top: 0px;

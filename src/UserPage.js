@@ -7,45 +7,62 @@ import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
 import worldIcon from './assets/world-icon192.svg';
 
-function processConnections(rawConnections, username) {
-  let processed = [];
-  
+function processConnections(rawConnections, viewingUsername, profileUsername) {
   let connectionsMap = {};
+  let reverseConnectionsMap = {}; // To track reverse connections for bidirectional check
+
+  // Initialize the connections map for all users mentioned
   rawConnections.forEach(conn => {
-    if (!connectionsMap[conn.fromUser]) {
-      connectionsMap[conn.fromUser] = [];
-    }
-    connectionsMap[conn.fromUser].push(conn.toUser);
+      // Initialize maps if not already done
+      if (!connectionsMap[conn.fromUser]) {
+          connectionsMap[conn.fromUser] = new Set();
+          reverseConnectionsMap[conn.fromUser] = new Set();
+      }
+      if (!connectionsMap[conn.toUser]) {
+          connectionsMap[conn.toUser] = new Set();
+          reverseConnectionsMap[conn.toUser] = new Set();
+      }
+      connectionsMap[conn.fromUser].add(conn.toUser);
+      reverseConnectionsMap[conn.toUser].add(conn.fromUser); // Track reverse for bidirectional check
   });
 
-  const buildChain = (current, chain = []) => {
-    if (chain.includes(current)) {
-      // Prevent infinite loops
-      return;
-    }
-    if (!chain.length) {
-      chain.push(username); // Start chain with the username
-    }
-    chain.push(current);
-    if (connectionsMap[current]) {
-      connectionsMap[current].forEach(next => buildChain(next, [...chain]));
-    } else {
-      // End of chain, save it
-      processed.push(chain.join(" → "));
-    }
-  };
+  // Convert sets back to arrays for easier manipulation
+  Object.keys(connectionsMap).forEach(user => {
+      connectionsMap[user] = Array.from(connectionsMap[user]);
+  });
 
-  if (connectionsMap[username]) {
-    connectionsMap[username].forEach(user => buildChain(user));
+  let queue = [{ user: viewingUsername, path: [viewingUsername] }];
+  let visited = new Set([viewingUsername]);
+
+  while (queue.length > 0) {
+      let { user, path } = queue.shift();
+
+      if (user === profileUsername) {
+          let displayChain = path.reduce((acc, currUser, index) => {
+              if (index === path.length - 1) {
+                  return acc + `@${currUser}`; // For the last user, append without an arrow
+              } else {
+                  const nextUser = path[index + 1];
+                  const symbol = reverseConnectionsMap[currUser].has(nextUser) ? ' ↔ ' : ' → ';
+                  return acc + `@${currUser}${symbol}`;
+              }
+          }, '');
+
+          return [{ display: displayChain }];
+      }
+
+      if (!connectionsMap[user]) continue;
+
+      connectionsMap[user].forEach(nextUser => {
+          if (!visited.has(nextUser)) {
+              visited.add(nextUser);
+              queue.push({ user: nextUser, path: [...path, nextUser] });
+          }
+      });
   }
 
-  rawConnections.filter(conn => conn.toUser === username && !processed.includes(`${conn.fromUser} → ${username}`)).forEach(conn => {
-    processed.push(`${conn.fromUser} → ${username}`);
-  });
-
-  return processed.map(chain => ({display: chain}));
+  return [{ display: "No continuous chain found." }];
 }
-
 
 function UserPage() {
     const [messages, setMessages] = useState([]);
@@ -79,33 +96,22 @@ function UserPage() {
         setTopHashtags(sortedHashtags);
       });
     
-      // Fetch and process connections
       const fetchAndProcessConnections = async () => {
-        const fromQuery = query(collection(db, "connections"), where("fromUser", "==", username));
-        const toQuery = query(collection(db, "connections"), where("toUser", "==", username));
+        // Fetch all connections; consider implications for performance/data volume
+        const connectionsQuery = query(collection(db, "connections"));
+        const snapshot = await getDocs(connectionsQuery);
+        const rawConnections = snapshot.docs.map(doc => doc.data());
     
-        const [fromSnapshot, toSnapshot] = await Promise.all([
-          getDocs(fromQuery),
-          getDocs(toQuery)
-        ]);
-    
-        // Combine results from both queries
-        const rawConnections = [
-          ...fromSnapshot.docs.map(doc => ({...doc.data(), direction: 'outgoing'})),
-          ...toSnapshot.docs.map(doc => ({...doc.data(), direction: 'incoming'}))
-        ];
-    
-        // Process connections to determine the display logic
-        const processedConnections = processConnections(rawConnections, username);
+        const viewingUsername = localStorage.getItem('username');
+        const processedConnections = processConnections(rawConnections, viewingUsername, username);
     
         setConnections(processedConnections);
-      };
+    };    
     
       fetchAndProcessConnections();
     
       return () => {
         unsubscribeMessages();
-        // Add any additional cleanup here if necessary
       };
     }, [username, viewMode]);
     
@@ -139,21 +145,21 @@ function UserPage() {
       };
     
       return (
-        <div style={{ textAlign: 'center', position: 'relative' }}> {/* Add position: 'relative' to enable absolute positioning of the icon */}
-        <Link to={`/${username}/world-locations`} className="world-icon-link-user-page">
-          <img src={worldIcon} alt="World Locations" style={{ maxWidth: '30px' }}/>
-      </Link>
-      <div>
-      {connections.length > 0 ? (
-      connections.map((connection, index) => (
-        <div key={index}>
-          {connection.display}
-        </div>
-      ))
-    ) : (
-      <p>No connections found.</p>
-    )}
-</div>
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+            <Link to={`/${username}/world-locations`} className="world-icon-link-user-page">
+                <img src={worldIcon} alt="World Locations" style={{ maxWidth: '30px' }} />
+            </Link>
+            <div>
+                {connections.length > 0 ? (
+                    connections.map((connection, index) => (
+                        <div key={index}>
+                            {connection.display}
+                        </div>
+                    ))
+                ) : (
+                    <p>No connections found.</p>
+                )}
+            </div>
         <h2>{viewMode === 'posts' ? `@${username}` : `@${username}`}</h2>
     <div
       style={{
