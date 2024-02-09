@@ -1,27 +1,69 @@
 // UserPage.js
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { collection, query, onSnapshot, where } from "firebase/firestore";
+import { collection, query, onSnapshot, where, getDocs } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
 import worldIcon from './assets/world-icon192.svg';
+
+function processConnections(rawConnections, username) {
+  let processed = [];
+  
+  let connectionsMap = {};
+  rawConnections.forEach(conn => {
+    if (!connectionsMap[conn.fromUser]) {
+      connectionsMap[conn.fromUser] = [];
+    }
+    connectionsMap[conn.fromUser].push(conn.toUser);
+  });
+
+  const buildChain = (current, chain = []) => {
+    if (chain.includes(current)) {
+      // Prevent infinite loops
+      return;
+    }
+    if (!chain.length) {
+      chain.push(username); // Start chain with the username
+    }
+    chain.push(current);
+    if (connectionsMap[current]) {
+      connectionsMap[current].forEach(next => buildChain(next, [...chain]));
+    } else {
+      // End of chain, save it
+      processed.push(chain.join(" → "));
+    }
+  };
+
+  if (connectionsMap[username]) {
+    connectionsMap[username].forEach(user => buildChain(user));
+  }
+
+  rawConnections.filter(conn => conn.toUser === username && !processed.includes(`${conn.fromUser} → ${username}`)).forEach(conn => {
+    processed.push(`${conn.fromUser} → ${username}`);
+  });
+
+  return processed.map(chain => ({display: chain}));
+}
+
 
 function UserPage() {
     const [messages, setMessages] = useState([]);
     const [viewMode, setViewMode] = useState('posts'); // 'posts' or 'mentions'
     const [topHashtags, setTopHashtags] = useState([]);
     const { username } = useParams();
-  
+    const [connections, setConnections] = useState([]);
+
     useEffect(() => {
+      // Fetch posts or mentions based on viewMode
       let q;
       if (viewMode === 'posts') {
         q = query(collection(db, "messages"), where("username", "==", username));
       } else { // 'mentions'
         q = query(collection(db, "messages"), where("mentions", "array-contains", username));
       }
-  
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    
+      const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
         const msgs = querySnapshot.docs.map(doc => ({
           ...doc.data(),
           id: doc.id,
@@ -36,9 +78,37 @@ function UserPage() {
         const sortedHashtags = Object.entries(hashtagFrequency).sort((a, b) => b[1] - a[1]).slice(0, 3);
         setTopHashtags(sortedHashtags);
       });
-  
-      return () => unsubscribe();
+    
+      // Fetch and process connections
+      const fetchAndProcessConnections = async () => {
+        const fromQuery = query(collection(db, "connections"), where("fromUser", "==", username));
+        const toQuery = query(collection(db, "connections"), where("toUser", "==", username));
+    
+        const [fromSnapshot, toSnapshot] = await Promise.all([
+          getDocs(fromQuery),
+          getDocs(toQuery)
+        ]);
+    
+        // Combine results from both queries
+        const rawConnections = [
+          ...fromSnapshot.docs.map(doc => ({...doc.data(), direction: 'outgoing'})),
+          ...toSnapshot.docs.map(doc => ({...doc.data(), direction: 'incoming'}))
+        ];
+    
+        // Process connections to determine the display logic
+        const processedConnections = processConnections(rawConnections, username);
+    
+        setConnections(processedConnections);
+      };
+    
+      fetchAndProcessConnections();
+    
+      return () => {
+        unsubscribeMessages();
+        // Add any additional cleanup here if necessary
+      };
     }, [username, viewMode]);
+    
   
     const commonButtonStyle = {
         display: 'inline-block', // Ensures that the width property is respected
@@ -73,6 +143,17 @@ function UserPage() {
         <Link to={`/${username}/world-locations`} className="world-icon-link-user-page">
           <img src={worldIcon} alt="World Locations" style={{ maxWidth: '30px' }}/>
       </Link>
+      <div>
+      {connections.length > 0 ? (
+      connections.map((connection, index) => (
+        <div key={index}>
+          {connection.display}
+        </div>
+      ))
+    ) : (
+      <p>No connections found.</p>
+    )}
+</div>
         <h2>{viewMode === 'posts' ? `@${username}` : `@${username}`}</h2>
     <div
       style={{

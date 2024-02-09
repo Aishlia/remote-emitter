@@ -118,15 +118,25 @@ function HomePage() {
       hashtags,
     };
     
-    try {
-      await addDoc(collection(db, "messages"), message);
-      setText(''); // Clear text input after submission
-      setErrorMessage(''); // Clear any error messages
-    } catch (error) {
-      console.error("Could not send the message: ", error);
-      setErrorMessage('Failed to send message. Please try again.');
+      try {
+        const docRef = await addDoc(collection(db, "messages"), message);
+        // After successful message addition, add connections for mentions
+        mentions.forEach(async (mention) => {
+          const connection = {
+            fromUser: username,
+            toUser: mention,
+            timestamp: new Date().toISOString(),
+          };
+          await addDoc(collection(db, "connections"), connection);
+        });
+  
+        setText(''); // Clear text input after submission
+        setErrorMessage(''); // Clear any error messages
+      } catch (error) {
+        console.error("Could not send the message: ", error);
+        setErrorMessage('Failed to send message. Please try again.');
+      }
     }
-  };
 
   return (
     <div style={{ textAlign: 'center', position: 'relative' }}>
