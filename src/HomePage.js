@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
-import { collection, query, onSnapshot, addDoc, orderBy } from "firebase/firestore";
+import { collection, query, onSnapshot, addDoc, orderBy, where, getDocs, updateDoc } from "firebase/firestore";
 import { db } from './firebase-config';
 import { Link } from 'react-router-dom';
 import { parseMessage, extractStreet, extractZip } from './utils';
@@ -118,25 +118,35 @@ function HomePage() {
       hashtags,
     };
     
-      try {
-        await addDoc(collection(db, "messages"), message);
-        // After successful message addition, add connections for mentions
-        mentions.forEach(async (mention) => {
-          const connection = {
-            fromUser: username,
-            toUser: mention,
-            timestamp: new Date().toISOString(),
-          };
-          await addDoc(collection(db, "connections"), connection);
-        });
-  
-        setText(''); // Clear text input after submission
-        setErrorMessage(''); // Clear any error messages
-      } catch (error) {
-        console.error("Could not send the message: ", error);
-        setErrorMessage('Failed to send message. Please try again.');
+    try {
+      await addDoc(collection(db, "messages"), message);
+      // After successful message addition, update user's interests with hashtags
+      if (hashtags.length > 0) {
+        const interestsRef = collection(db, "interests");
+        const q = query(interestsRef, where("userID", "==", username));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          // If user does not have interests document, create one
+          await addDoc(interestsRef, {
+            userID: username,
+            tags: hashtags,
+          });
+        } else {
+          // If user already has interests document, update it with new hashtags
+          querySnapshot.forEach(async (doc) => {
+            const existingTags = doc.data().tags || [];
+            const updatedTags = [...new Set([...existingTags, ...hashtags])]; // Combine and remove duplicates
+            await updateDoc(doc.ref, { tags: updatedTags });
+          });
+        }
       }
+      setText(''); // Clear text input after submission
+      setErrorMessage(''); // Clear any error messages
+    } catch (error) {
+      console.error("Could not send the message: ", error);
+      setErrorMessage('Failed to send message. Please try again.');
     }
+  }  
 
   return (
     <div style={{ textAlign: 'center', position: 'relative' }}>
