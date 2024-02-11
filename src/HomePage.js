@@ -15,6 +15,7 @@ import { db } from "./firebase-config";
 import { Link } from "react-router-dom";
 import { parseMessage, extractStreet, extractZip } from "./utils";
 import worldIcon from "./assets/world-icon192.svg";
+import driver from "./neo4jDriver";
 
 const adjectives = [
   "Fast",
@@ -154,6 +155,74 @@ function HomePage() {
     }
   };
 
+  const addMention = async (fromUser, toUser) => {
+    const session = driver.session({ database: "neo4j" });
+
+    try {
+      // Create or update the mentions relationship in both directions
+      await session.writeTransaction((tx) =>
+        tx.run(
+          `
+          MERGE (a:User {username: $fromUser})
+          MERGE (b:User {username: $toUser})
+          MERGE (a)-[:MENTIONS]->(b)
+          MERGE (b)-[:MENTIONS]->(a)
+        `,
+          { fromUser, toUser }
+        )
+      );
+
+      console.log(
+        `Mention relationship created or updated between ${fromUser} and ${toUser}`
+      );
+    } catch (error) {
+      console.error("Error creating/updating mention relationship:", error);
+    } finally {
+      await session.close();
+    }
+
+    // Framework for directional connections (for now, treat all mentions as directional)
+    // try {
+    //   // First, try to create a MENTIONS relationship if it doesn't exist
+    //   let result = await session.writeTransaction(tx =>
+    //     tx.run(`
+    //       MERGE (a:User {username: $fromUser})
+    //       MERGE (b:User {username: $toUser})
+    //       MERGE (a)-[r:MENTIONS]->(b)
+    //       ON CREATE SET r.count = 1
+    //       ON MATCH SET r.count = r.count + 1
+    //       RETURN r
+    //     `, { fromUser, toUser })
+    //   );
+
+    //   // Check if there is a reciprocal mention
+    //   const reciprocalResult = await session.writeTransaction(tx =>
+    //     tx.run(`
+    //       MATCH (a:User {username: $fromUser})<-[r:MENTIONS]-(b:User {username: $toUser})
+    //       RETURN r
+    //     `, { fromUser, toUser })
+    //   );
+
+    //   if (reciprocalResult.records.length > 0) {
+    //     // If there is a reciprocal mention, update both relationships to BIDIRECTIONAL
+    //     await session.writeTransaction(tx =>
+    //       tx.run(`
+    //         MATCH (a:User {username: $fromUser}), (b:User {username: $toUser})
+    //         MERGE (a)-[r1:MENTIONS]->(b)
+    //         MERGE (b)-[r2:MENTIONS]->(a)
+    //         SET r1.bidirectional = true, r2.bidirectional = true
+    //       `, { fromUser, toUser })
+    //     );
+    //   }
+
+    //   console.log(`Mention added/updated from ${fromUser} to ${toUser}`);
+    // } catch (error) {
+    //   console.error("Error adding/updating mention:", error);
+    // } finally {
+    //   await session.close();
+    // }
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!text.trim() || text.length > 800) {
@@ -240,6 +309,9 @@ function HomePage() {
           });
         }
       }
+      mentions.forEach((mention) => {
+        addMention(username, mention);
+      });
       setText(""); // Clear text input after submission
       setErrorMessage(""); // Clear any error messages
     } catch (error) {

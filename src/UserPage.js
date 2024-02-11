@@ -1,75 +1,28 @@
 // UserPage.js
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import {
-  collection,
-  query,
-  onSnapshot,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { collection, query, onSnapshot, where } from "firebase/firestore";
 import { db } from "./firebase-config";
 import { Link } from "react-router-dom";
 import { parseMessage, extractStreet, extractZip } from "./utils";
 import worldIcon from "./assets/world-icon192.svg";
+import driver from "./neo4jDriver";
 
-function processConnections(rawConnections, viewingUsername, profileUsername) {
-  let connectionsMap = {};
-  let reverseConnectionsMap = {}; // To track reverse connections for bidirectional check
+function formatPath(path) {
+  const nodes = path.segments.map(
+    (segment) => segment.start.properties.username
+  );
+  // Add the last node since it's not included in the segments' start nodes
+  nodes.push(path.end.properties.username);
 
-  // Initialize the connections map for all users mentioned
-  rawConnections.forEach((conn) => {
-    // Initialize maps if not already done
-    if (!connectionsMap[conn.fromUser]) {
-      connectionsMap[conn.fromUser] = new Set();
-      reverseConnectionsMap[conn.fromUser] = new Set();
-    }
-    if (!connectionsMap[conn.toUser]) {
-      connectionsMap[conn.toUser] = new Set();
-      reverseConnectionsMap[conn.toUser] = new Set();
-    }
-    connectionsMap[conn.fromUser].add(conn.toUser);
-    reverseConnectionsMap[conn.toUser].add(conn.fromUser); // Track reverse for bidirectional check
-  });
+  const formattedPath = nodes
+    .map((username, i) => {
+      if (i === 0) return `@${username}`; // First user
+      return ` → @${username}`;
+    })
+    .join("");
 
-  // Convert sets back to arrays for easier manipulation
-  Object.keys(connectionsMap).forEach((user) => {
-    connectionsMap[user] = Array.from(connectionsMap[user]);
-  });
-
-  let queue = [{ user: viewingUsername, path: [viewingUsername] }];
-  let visited = new Set([viewingUsername]);
-
-  while (queue.length > 0) {
-    let { user, path } = queue.shift();
-
-    if (user === profileUsername) {
-      let displayChain = path.reduce((acc, currUser, index) => {
-        if (index === path.length - 1) {
-          return acc + `@${currUser}`; // For the last user, append without an arrow
-        } else {
-          const nextUser = path[index + 1];
-          const symbol = reverseConnectionsMap[currUser].has(nextUser)
-            ? " ↔ "
-            : " → ";
-          return acc + `@${currUser}${symbol}`;
-        }
-      }, "");
-
-      return [{ display: displayChain }];
-    }
-
-    if (!connectionsMap[user]) continue;
-
-    connectionsMap[user].forEach((nextUser) => {
-      if (!visited.has(nextUser)) {
-        visited.add(nextUser);
-        queue.push({ user: nextUser, path: [...path, nextUser] });
-      }
-    });
-  }
-
-  return [{ display: "No continuous chain found." }];
+  return formattedPath;
 }
 
 function UserPage() {
@@ -78,6 +31,7 @@ function UserPage() {
   const [topHashtags, setTopHashtags] = useState([]);
   const { username } = useParams();
   const [connections, setConnections] = useState([]);
+  const viewingUsername = localStorage.getItem("username");
 
   useEffect(() => {
     // Fetch posts or mentions based on viewMode
@@ -110,28 +64,43 @@ function UserPage() {
       setTopHashtags(sortedHashtags);
     });
 
-    const fetchAndProcessConnections = async () => {
-      // Fetch all connections; consider implications for performance/data volume
-      const connectionsQuery = query(collection(db, "connections"));
-      const snapshot = await getDocs(connectionsQuery);
-      const rawConnections = snapshot.docs.map((doc) => doc.data());
+    const fetchConnections = async () => {
+      const session = driver.session({ database: "neo4j" });
+      try {
+        const result = await session.readTransaction((tx) =>
+          tx.run(
+            `
+            MATCH (viewing:User {username: $viewingUsername}), (profile:User {username: $username})
+            MATCH p=shortestPath((viewing)-[:MENTIONS*]-(profile))
+            RETURN [n IN nodes(p) | n.username] AS usernames
+          `,
+            { viewingUsername, username }
+          )
+        );
 
-      const viewingUsername = localStorage.getItem("username");
-      const processedConnections = processConnections(
-        rawConnections,
-        viewingUsername,
-        username
-      );
-
-      setConnections(processedConnections);
+        if (
+          result.records.length > 0 &&
+          result.records[0].get("usernames").length > 1
+        ) {
+          const pathUsernames = result.records[0].get("usernames");
+          const connectionPath = pathUsernames.map((u) => `@${u}`).join(" - ");
+          setConnections([connectionPath]);
+        } else {
+          setConnections(["No connection found."]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch connections:", error);
+      } finally {
+        await session.close();
+      }
     };
 
-    fetchAndProcessConnections();
+    fetchConnections();
 
     return () => {
       unsubscribeMessages();
     };
-  }, [username, viewMode]);
+  }, [username, viewMode, viewingUsername]);
 
   const commonButtonStyle = {
     display: "inline-block", // Ensures that the width property is respected
@@ -176,7 +145,7 @@ function UserPage() {
       <div>
         {connections.length > 0 ? (
           connections.map((connection, index) => (
-            <div key={index}>{connection.display}</div>
+            <div key={index}>{connection}</div>
           ))
         ) : (
           <p>No connections found.</p>
