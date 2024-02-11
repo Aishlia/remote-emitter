@@ -8,23 +8,6 @@ import { parseMessage, extractStreet, extractZip } from "./utils";
 import worldIcon from "./assets/world-icon192.svg";
 import driver from "./neo4jDriver";
 
-function formatPath(path) {
-  const nodes = path.segments.map(
-    (segment) => segment.start.properties.username
-  );
-  // Add the last node since it's not included in the segments' start nodes
-  nodes.push(path.end.properties.username);
-
-  const formattedPath = nodes
-    .map((username, i) => {
-      if (i === 0) return `@${username}`; // First user
-      return ` → @${username}`;
-    })
-    .join("");
-
-  return formattedPath;
-}
-
 function UserPage() {
   const [messages, setMessages] = useState([]);
   const [viewMode, setViewMode] = useState("posts"); // 'posts' or 'mentions'
