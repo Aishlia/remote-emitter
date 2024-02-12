@@ -56,15 +56,15 @@ function UserPage() {
     
       const session = driver.session({ database: "neo4j" });
       try {
-        const result = await session.readTransaction(tx =>
-          tx.run(`
-            MATCH path = (startUser:User {username: $viewingUsername})-[:MENTIONS*]->(endUser:User {username: $username})
+        const result = await session.executeRead(async tx => {
+          return tx.run(`
+            MATCH path = shortestPath((startUser:User {username: $viewingUsername})-[:MENTIONS*]->(endUser:User {username: $username}))
             UNWIND nodes(path) AS node
             UNWIND relationships(path) AS rel
             WITH collect(DISTINCT node.username) AS usernames, collect(DISTINCT rel.type) AS types
             RETURN usernames, types
-          `, { viewingUsername, username })
-        );
+          `, { viewingUsername, username });
+        });
     
         if (result.records.length > 0) {
           const records = result.records[0];
@@ -90,11 +90,6 @@ function UserPage() {
             return `@${username} ${arrow}`;
           }).join(' ').trim();
     
-          // Append the final username if it's not included
-          if (connectionPath.indexOf(`@${username}`) === -1) {
-            connectionPath += ` @${username}`;
-          }
-    
           setConnections(connectionPath);
         } else {
           setConnections("No connection path found.");
@@ -104,7 +99,7 @@ function UserPage() {
       } finally {
         await session.close();
       }
-    };
+    };    
     
     fetchConnections();
 
