@@ -18,6 +18,8 @@ import { parseMessage, extractStreet, extractZip } from "./utils";
 import worldIcon from "./assets/world-icon192.svg";
 import driver from "./neo4jDriver";
 
+// TEMP: Remove when OAuth login is enabled
+// Replace with user chosen username (still save in localStorage maybe)
 const adjectives = [
   "Fast",
   "Silent",
@@ -157,72 +159,59 @@ function HomePage() {
   };
 
   const addMention = async (fromUser, toUser) => {
-    const session = driver.session({ database: "neo4j" });
-
+    const session = driver.session({ database: 'neo4j' });
+  
     try {
-      // Create or update the mentions relationship in both directions
-      await session.writeTransaction((tx) =>
-        tx.run(
-          `
-          MERGE (a:User {username: $fromUser})
-          MERGE (b:User {username: $toUser})
-          MERGE (a)-[:MENTIONS]->(b)
-          MERGE (b)-[:MENTIONS]->(a)
-        `,
-          { fromUser, toUser }
-        )
+      // Create or update the direct mention from 'fromUser' to 'toUser'
+      await session.executeWrite(tx =>
+        tx.run(`
+          MERGE (from:User {username: $fromUser})
+          MERGE (to:User {username: $toUser})
+          MERGE (from)-[direct:MENTIONS]->(to)
+          ON CREATE SET direct.type = 'direct', direct.count = 1
+          ON MATCH SET direct.count = direct.count + 1
+          RETURN direct
+        `, { fromUser, toUser })
       );
-
-      console.log(
-        `Mention relationship created or updated between ${fromUser} and ${toUser}`
+  
+      // Check for existing indirect mention and update both to bilateral if present
+      const indirectMentionResult = await session.executeWrite(tx =>
+        tx.run(`
+          MATCH (from:User {username: $fromUser}), (to:User {username: $toUser})
+          OPTIONAL MATCH (to)-[indirect:MENTIONS]->(from)
+          RETURN indirect
+        `, { fromUser, toUser })
       );
+  
+      if (indirectMentionResult.records.length > 0 && indirectMentionResult.records[0].get('indirect')) {
+        // If an indirect mention exists, update both relationships to 'bilateral'
+        await session.executeWrite(tx =>
+          tx.run(`
+            MATCH (from:User {username: $fromUser}), (to:User {username: $toUser})
+            MATCH (from)-[direct:MENTIONS]->(to)
+            MATCH (to)-[indirect:MENTIONS]->(from)
+            SET direct.type = 'bilateral', indirect.type = 'bilateral'
+          `, { fromUser, toUser })
+        );
+      } else {
+        // Ensure an indirect mention is created if not already bilateral
+        await session.executeWrite(tx =>
+          tx.run(`
+            MATCH (from:User {username: $fromUser}), (to:User {username: $toUser})
+            MERGE (to)-[indirect:MENTIONS]->(from)
+            ON CREATE SET indirect.type = 'indirect', indirect.count = 1
+            ON MATCH SET indirect.count = indirect.count + 1
+          `, { fromUser, toUser })
+        );
+      }
+  
+      console.log(`Mention relationship created or updated between ${fromUser} and ${toUser}`);
     } catch (error) {
       console.error("Error creating/updating mention relationship:", error);
     } finally {
       await session.close();
     }
-
-    // Framework for directional connections (for now, treat all mentions as directional)
-    // try {
-    //   // First, try to create a MENTIONS relationship if it doesn't exist
-    //   let result = await session.writeTransaction(tx =>
-    //     tx.run(`
-    //       MERGE (a:User {username: $fromUser})
-    //       MERGE (b:User {username: $toUser})
-    //       MERGE (a)-[r:MENTIONS]->(b)
-    //       ON CREATE SET r.count = 1
-    //       ON MATCH SET r.count = r.count + 1
-    //       RETURN r
-    //     `, { fromUser, toUser })
-    //   );
-
-    //   // Check if there is a reciprocal mention
-    //   const reciprocalResult = await session.writeTransaction(tx =>
-    //     tx.run(`
-    //       MATCH (a:User {username: $fromUser})<-[r:MENTIONS]-(b:User {username: $toUser})
-    //       RETURN r
-    //     `, { fromUser, toUser })
-    //   );
-
-    //   if (reciprocalResult.records.length > 0) {
-    //     // If there is a reciprocal mention, update both relationships to BIDIRECTIONAL
-    //     await session.writeTransaction(tx =>
-    //       tx.run(`
-    //         MATCH (a:User {username: $fromUser}), (b:User {username: $toUser})
-    //         MERGE (a)-[r1:MENTIONS]->(b)
-    //         MERGE (b)-[r2:MENTIONS]->(a)
-    //         SET r1.bidirectional = true, r2.bidirectional = true
-    //       `, { fromUser, toUser })
-    //     );
-    //   }
-
-    //   console.log(`Mention added/updated from ${fromUser} to ${toUser}`);
-    // } catch (error) {
-    //   console.error("Error adding/updating mention:", error);
-    // } finally {
-    //   await session.close();
-    // }
-  };
+  };  
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();

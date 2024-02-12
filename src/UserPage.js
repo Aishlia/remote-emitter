@@ -48,28 +48,56 @@ function UserPage() {
     });
 
     const fetchConnections = async () => {
+      if (viewingUsername === username) {
+        // Do not display connections for the user viewing their own profile
+        setConnections("");
+        return;
+      }
+    
       const session = driver.session({ database: "neo4j" });
       try {
-        const result = await session.readTransaction((tx) =>
-          tx.run(
-            `
-            MATCH (viewing:User {username: $viewingUsername}), (profile:User {username: $username})
-            MATCH p=shortestPath((viewing)-[:MENTIONS*]-(profile))
-            RETURN [n IN nodes(p) | n.username] AS usernames
-          `,
-            { viewingUsername, username }
-          )
+        const result = await session.readTransaction(tx =>
+          tx.run(`
+            MATCH path = (startUser:User {username: $viewingUsername})-[:MENTIONS*]->(endUser:User {username: $username})
+            UNWIND nodes(path) AS node
+            UNWIND relationships(path) AS rel
+            WITH collect(DISTINCT node.username) AS usernames, collect(DISTINCT rel.type) AS types
+            RETURN usernames, types
+          `, { viewingUsername, username })
         );
-
-        if (
-          result.records.length > 0 &&
-          result.records[0].get("usernames").length > 1
-        ) {
-          const pathUsernames = result.records[0].get("usernames");
-          const connectionPath = pathUsernames.map((u) => `@${u}`).join(" - ");
-          setConnections([connectionPath]);
+    
+        if (result.records.length > 0) {
+          const records = result.records[0];
+          const types = records.get('types');
+          const usernames = records.get('usernames');
+          let connectionPath = usernames.map((username, i) => {
+            let arrow = '';
+            if (i < types.length) {
+              switch (types[i]) {
+                case 'direct':
+                  arrow = '→';
+                  break;
+                case 'indirect':
+                  arrow = '←';
+                  break;
+                case 'bilateral':
+                  arrow = '↔';
+                  break;
+                default:
+                  arrow = '';
+              }
+            }
+            return `@${username} ${arrow}`;
+          }).join(' ').trim();
+    
+          // Append the final username if it's not included
+          if (connectionPath.indexOf(`@${username}`) === -1) {
+            connectionPath += ` @${username}`;
+          }
+    
+          setConnections(connectionPath);
         } else {
-          setConnections(["No connection found."]);
+          setConnections("No connection path found.");
         }
       } catch (error) {
         console.error("Failed to fetch connections:", error);
@@ -77,7 +105,7 @@ function UserPage() {
         await session.close();
       }
     };
-
+    
     fetchConnections();
 
     return () => {
@@ -126,13 +154,9 @@ function UserPage() {
         />
       </Link>
       <div>
-        {connections.length > 0 ? (
-          connections.map((connection, index) => (
-            <div key={index}>{connection}</div>
-          ))
-        ) : (
-          <p>No connections found.</p>
-        )}
+      {viewingUsername !== username && connections ? (
+        <div>{`${connections}`}</div>
+      ) : null}
       </div>
       <h2>{viewMode === "posts" ? `@${username}` : `@${username}`}</h2>
       <div
