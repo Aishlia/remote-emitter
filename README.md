@@ -17,7 +17,6 @@
       <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
     <li><a href="#changelog">Changelog</a></li>
@@ -48,19 +47,6 @@ REACT_APP_MESSAGING_SENDER_ID=1234
 REACT_APP_APP_ID=1:234
 REACT_APP_MEASUREMENT_ID=G1234
 ```
-
-### Installation
-
-```
-npm run build
-npm start
-```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Usage
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Changelog
 Can't update README in it's entirety too often. \
