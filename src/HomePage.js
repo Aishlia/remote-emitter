@@ -1,5 +1,6 @@
 // HomePage.js
 import React, { useState, useEffect } from "react";
+import axios from 'axios';
 import "./App.css";
 import {
   collection,
@@ -248,20 +249,36 @@ function HomePage() {
     };
 
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          locationData.latitude = position.coords.latitude;
-          locationData.longitude = position.coords.longitude;
-          await addMessage(locationData);
-        },
-        async () => {
-          await addMessage(locationData);
-        }
-      );
-    } else {
-      console.error("Geolocation is not supported by your browser");
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      try {
+        const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const addressComponents = response.data.address;
+        const formattedAddress = {
+          house_number: addressComponents.house_number || '',
+          road: addressComponents.road || '',
+          city: addressComponents.city || addressComponents.town || addressComponents.village || '',
+          state: addressComponents.state || '',
+          postcode: addressComponents.postcode || '',
+          country: addressComponents.country || ''
+        };
+        locationData.latitude = position.coords.latitude;
+        locationData.longitude = position.coords.longitude;
+        locationData.address = `${formattedAddress.house_number} ${formattedAddress.road}, ${formattedAddress.city}, ${formattedAddress.state}, ${formattedAddress.postcode}, ${formattedAddress.country}`;
+      } catch (error) {
+        console.error("Error fetching address: ", error);
+      }
+      finally {
+        await addMessage(locationData);
+      }
+    }, async () => {
+      // Error callback or when access to location is denied
       await addMessage(locationData);
-    }
+    });
+      } else {
+        console.error('Geolocation is not supported by your browser');
+        await addMessage(locationData);
+      };
   };
 
   const handleViewModeChange = (mode) => (event) => {
