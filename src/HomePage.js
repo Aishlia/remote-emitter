@@ -94,6 +94,7 @@ function HomePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [viewMode, setViewMode] = useState("Global");
   const [userTags, setUserTags] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Retrieve username from localStorage or assign new random username
   useEffect(() => {
@@ -215,8 +216,11 @@ function HomePage() {
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     if (!text.trim() || text.length > 800) {
       setErrorMessage("Text submissions are limited to 800 characters.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -319,10 +323,12 @@ function HomePage() {
         addMention(username, mention);
       });
       setText(""); // Clear text input after submission
+      setIsSubmitting(false);
       setErrorMessage(""); // Clear any error messages
     } catch (error) {
       console.error("Could not send the message: ", error);
       setErrorMessage("Failed to send message. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
