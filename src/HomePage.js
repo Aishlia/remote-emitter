@@ -1,7 +1,9 @@
 // HomePage.js
-import React, { useState, useEffect } from "react";
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import "./App.css";
+import { storage } from "./firebase-config";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import {
   collection,
   query,
@@ -15,7 +17,8 @@ import {
 import { db } from "./firebase-config";
 import { Link } from "react-router-dom";
 import { parseMessage, extractStreet, extractZip } from "./utils";
-import worldIcon from "./assets/world-icon192.svg";
+// import worldIcon from "./assets/world-icon192.svg";
+import imageIcon from "./assets/image-icon192.svg";
 import driver from "./neo4jDriver";
 
 // TEMP: Remove when OAuth login is enabled
@@ -87,6 +90,10 @@ const nouns = [
   "Zebra",
 ];
 
+const hiddenFileInputStyle = {
+  display: "none",
+};
+
 function HomePage() {
   const [text, setText] = useState("");
   const [username, setUsername] = useState("");
@@ -95,6 +102,8 @@ function HomePage() {
   const [viewMode, setViewMode] = useState("Global");
   const [userTags, setUserTags] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [images, setImages] = useState([]);
+  const fileInputRef = useRef(null);
 
   // Retrieve username from localStorage or assign new random username
   useEffect(() => {
@@ -160,59 +169,76 @@ function HomePage() {
   };
 
   const addMention = async (fromUser, toUser) => {
-    const session = driver.session({ database: 'neo4j' });
-  
+    const session = driver.session({ database: "neo4j" });
+
     try {
       // Create or update the direct mention from 'fromUser' to 'toUser'
-      await session.executeWrite(tx =>
-        tx.run(`
+      await session.executeWrite((tx) =>
+        tx.run(
+          `
           MERGE (from:User {username: $fromUser})
           MERGE (to:User {username: $toUser})
           MERGE (from)-[direct:MENTIONS]->(to)
           ON CREATE SET direct.type = 'direct', direct.count = 1
           ON MATCH SET direct.count = direct.count + 1
           RETURN direct
-        `, { fromUser, toUser })
+        `,
+          { fromUser, toUser }
+        )
       );
-  
+
       // Check for existing indirect mention and update both to bilateral if present
-      const indirectMentionResult = await session.executeWrite(tx =>
-        tx.run(`
+      const indirectMentionResult = await session.executeWrite((tx) =>
+        tx.run(
+          `
           MATCH (from:User {username: $fromUser}), (to:User {username: $toUser})
           OPTIONAL MATCH (to)-[indirect:MENTIONS]->(from)
           RETURN indirect
-        `, { fromUser, toUser })
+        `,
+          { fromUser, toUser }
+        )
       );
-  
-      if (indirectMentionResult.records.length > 0 && indirectMentionResult.records[0].get('indirect')) {
+
+      if (
+        indirectMentionResult.records.length > 0 &&
+        indirectMentionResult.records[0].get("indirect")
+      ) {
         // If an indirect mention exists, update both relationships to 'bilateral'
-        await session.executeWrite(tx =>
-          tx.run(`
+        await session.executeWrite((tx) =>
+          tx.run(
+            `
             MATCH (from:User {username: $fromUser}), (to:User {username: $toUser})
             MATCH (from)-[direct:MENTIONS]->(to)
             MATCH (to)-[indirect:MENTIONS]->(from)
             SET direct.type = 'bilateral', indirect.type = 'bilateral'
-          `, { fromUser, toUser })
+          `,
+            { fromUser, toUser }
+          )
         );
       } else {
         // Ensure an indirect mention is created if not already bilateral
-        await session.executeWrite(tx =>
-          tx.run(`
+        await session.executeWrite((tx) =>
+          tx.run(
+            `
             MATCH (from:User {username: $fromUser}), (to:User {username: $toUser})
             MERGE (to)-[indirect:MENTIONS]->(from)
             ON CREATE SET indirect.type = 'indirect', indirect.count = 1
             ON MATCH SET indirect.count = indirect.count + 1
-          `, { fromUser, toUser })
+          `,
+            { fromUser, toUser }
+          )
         );
       }
-  
-      console.log(`Mention relationship created or updated between ${fromUser} and ${toUser}`);
+
+      console.log(
+        `Mention relationship created or updated between ${fromUser} and ${toUser}`
+      );
     } catch (error) {
       console.error("Error creating/updating mention relationship:", error);
     } finally {
       await session.close();
     }
-  };  
+  };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -242,36 +268,44 @@ function HomePage() {
     };
 
     if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      const { latitude, longitude } = position.coords;
-      try {
-        const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-        const addressComponents = response.data.address;
-        const formattedAddress = {
-          house_number: addressComponents.house_number || '',
-          road: addressComponents.road || '',
-          city: addressComponents.city || addressComponents.town || addressComponents.village || '',
-          state: addressComponents.state || '',
-          postcode: addressComponents.postcode || '',
-          country: addressComponents.country || ''
-        };
-        locationData.latitude = position.coords.latitude;
-        locationData.longitude = position.coords.longitude;
-        locationData.address = `${formattedAddress.house_number} ${formattedAddress.road}, ${formattedAddress.city}, ${formattedAddress.state}, ${formattedAddress.postcode}, ${formattedAddress.country}`;
-      } catch (error) {
-        console.error("Error fetching address: ", error);
-      }
-      finally {
-        await addMessage(locationData);
-      }
-    }, async () => {
-      // Error callback or when access to location is denied
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const response = await axios.get(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            );
+            const addressComponents = response.data.address;
+            const formattedAddress = {
+              house_number: addressComponents.house_number || "",
+              road: addressComponents.road || "",
+              city:
+                addressComponents.city ||
+                addressComponents.town ||
+                addressComponents.village ||
+                "",
+              state: addressComponents.state || "",
+              postcode: addressComponents.postcode || "",
+              country: addressComponents.country || "",
+            };
+            locationData.latitude = position.coords.latitude;
+            locationData.longitude = position.coords.longitude;
+            locationData.address = `${formattedAddress.house_number} ${formattedAddress.road}, ${formattedAddress.city}, ${formattedAddress.state}, ${formattedAddress.postcode}, ${formattedAddress.country}`;
+          } catch (error) {
+            console.error("Error fetching address: ", error);
+          } finally {
+            await addMessage(locationData);
+          }
+        },
+        async () => {
+          // Error callback or when access to location is denied
+          await addMessage(locationData);
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by your browser");
       await addMessage(locationData);
-    });
-      } else {
-        console.error('Geolocation is not supported by your browser');
-        await addMessage(locationData);
-      };
+    }
   };
 
   const handleViewModeChange = (mode) => (event) => {
@@ -280,13 +314,13 @@ function HomePage() {
   };
 
   const addMessage = async (locationData) => {
-    const timestamp = new Date().toISOString();
-    const mentionRegex = /@(\w+)/g;
-    const hashtagRegex = /#(\w+)/g;
-    const mentions = [...text.matchAll(mentionRegex)].map((match) => match[1]);
-    const hashtags = [...text.matchAll(hashtagRegex)].map((match) => match[1]);
+    setIsSubmitting(true);
 
-    const message = {
+    const timestamp = new Date().toISOString();
+    const mentions = [...text.matchAll(/@(\w+)/g)].map((match) => match[1]);
+    const hashtags = [...text.matchAll(/#(\w+)/g)].map((match) => match[1]);
+
+    let message = {
       username: username || "Anonymous",
       text,
       timestamp,
@@ -295,36 +329,38 @@ function HomePage() {
       longitude: locationData.longitude,
       mentions,
       hashtags,
+      images: [], // Prepare to store image URLs
     };
 
+    // Upload images first if any
+    if (images.length > 0) {
+      const imageUploadPromises = images.map((imageFile) => {
+        const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
+        return uploadBytesResumable(imageRef, imageFile).then((snapshot) =>
+          getDownloadURL(snapshot.ref)
+        );
+      });
+
+      try {
+        const imageUrls = await Promise.all(imageUploadPromises);
+        message.images = imageUrls;
+      } catch (error) {
+        console.error("Error uploading images:", error);
+        setIsSubmitting(false);
+        setErrorMessage("Failed to upload images. Please try again.");
+        return;
+      }
+    }
+
+    // Then add the message to Firestore
     try {
       await addDoc(collection(db, "messages"), message);
-      // After successful message addition, update user's interests with hashtags
-      if (hashtags.length > 0) {
-        const interestsRef = collection(db, "interests");
-        const q = query(interestsRef, where("userID", "==", username));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          // If user does not have interests document, create one
-          await addDoc(interestsRef, {
-            userID: username,
-            tags: hashtags,
-          });
-        } else {
-          // If user already has interests document, update it with new hashtags
-          querySnapshot.forEach(async (doc) => {
-            const existingTags = doc.data().tags || [];
-            const updatedTags = [...new Set([...existingTags, ...hashtags])]; // Combine and remove duplicates
-            await updateDoc(doc.ref, { tags: updatedTags });
-          });
-        }
-      }
-      mentions.forEach((mention) => {
-        addMention(username, mention);
-      });
-      setText(""); // Clear text input after submission
+      // Clear states after successful submission
+      setText("");
+      setImages([]);
+      fileInputRef.current.value = "";
       setIsSubmitting(false);
-      setErrorMessage(""); // Clear any error messages
+      setErrorMessage("");
     } catch (error) {
       console.error("Could not send the message: ", error);
       setErrorMessage("Failed to send message. Please try again.");
@@ -351,13 +387,27 @@ function HomePage() {
           <i onClick={handleSubmit} className="submit-icon">
             →
           </i>
-          <Link to={`/world-locations`} className="world-icon-link">
+          {/* <Link to={`/world-locations`} className="world-icon-link">
             <img
               src={worldIcon}
               alt="World Locations"
               style={{ maxWidth: "40px" }}
             />
-          </Link>
+          </Link> */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImages([...e.target.files])}
+            multiple // Remove if only single image upload is allowed
+            ref={fileInputRef}
+            style={hiddenFileInputStyle} // Hide the file input
+          />
+          <img
+            src={imageIcon}
+            alt="Upload"
+            onClick={() => fileInputRef.current.click()} // Open file dialog when the image is clicked
+            style={{ cursor: "pointer", maxWidth: "40px" }}
+          />
         </div>
         {errorMessage && (
           <div style={{ color: "red", marginTop: "10px" }}>{errorMessage}</div>
@@ -392,30 +442,41 @@ function HomePage() {
             <p
               dangerouslySetInnerHTML={{ __html: parseMessage(message.text) }}
             ></p>
-            <small>
-              {new Date(message.timestamp).toLocaleDateString("en-US", {
-                month: "numeric",
-                day: "numeric",
-              }) +
-                " " +
-                new Date(message.timestamp).toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
+            {message.images &&
+              message.images.map((imageUrl) => (
+                <img
+                  key={imageUrl}
+                  src={imageUrl}
+                  alt="Posted"
+                  className="submission-image"
+                />
+              ))}
+            <div className="submission-timestamp">
+              <small>
+                {new Date(message.timestamp).toLocaleDateString("en-US", {
+                  month: "numeric",
+                  day: "numeric",
                 }) +
-                " "}
-              {/* Extract street and zip and check if both exist, else display "No Location" */}
-              -{" "}
-              {(() => {
-                const street = extractStreet(message.address);
-                const zip = extractZip(message.address);
-                if (street && zip) {
-                  return `${street}, ${zip}`;
-                } else {
-                  return "No Location";
-                }
-              })()}
-            </small>
+                  " " +
+                  new Date(message.timestamp).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}{" "}
+                {/* Added a space inside the curly braces */}
+              </small>
+              <small>
+                {(() => {
+                  const street = extractStreet(message.address);
+                  const zip = extractZip(message.address);
+                  if (street && zip) {
+                    return ` ${street}, ${zip}`; // Ensure there is a space at the start of this string
+                  } else {
+                    return "No Location";
+                  }
+                })()}
+              </small>
+            </div>
           </div>
         </div>
       ))}

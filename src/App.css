@@ -22,6 +22,12 @@ input,
   overflow-y: hidden;
 }
 
+.submission-content img {
+  max-width: 100%; /* Adjust the percentage or set a specific pixel value */
+  max-height: 300px; /* Set a max height that fits your layout */
+  object-fit: cover; /* This will make sure to cover the area without stretching the image */
+}
+
 .messages-container {
   max-height: 400px;
   overflow-y: auto;

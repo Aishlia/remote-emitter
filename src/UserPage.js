@@ -196,24 +196,41 @@ function UserPage() {
               <p
                 dangerouslySetInnerHTML={{ __html: parseMessage(message.text) }}
               ></p>
-              <small>
-                {new Date(message.timestamp).toLocaleDateString("en-US", {
-                  month: "numeric",
-                  day: "numeric",
-                }) +
-                  " " +
-                  new Date(message.timestamp).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}{" "}
-                -{" "}
-                {(() => {
-                  const street = extractStreet(message.address);
-                  const zip = extractZip(message.address);
-                  return street && zip ? `${street}, ${zip}` : "No Location";
-                })()}
-              </small>
+              {message.images &&
+                message.images.map((imageUrl) => (
+                  <img
+                    key={imageUrl}
+                    src={imageUrl}
+                    alt="Posted"
+                    className="submission-image"
+                  />
+                ))}
+              <div className="submission-timestamp">
+                <small>
+                  {new Date(message.timestamp).toLocaleDateString("en-US", {
+                    month: "numeric",
+                    day: "numeric",
+                  }) +
+                    " " +
+                    new Date(message.timestamp).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}{" "}
+                  {/* Added a space inside the curly braces */}
+                </small>
+                <small>
+                  {(() => {
+                    const street = extractStreet(message.address);
+                    const zip = extractZip(message.address);
+                    if (street && zip) {
+                      return ` ${street}, ${zip}`; // Ensure there is a space at the start of this string
+                    } else {
+                      return "No Location";
+                    }
+                  })()}
+                </small>
+              </div>
             </div>
           </div>
         ))
