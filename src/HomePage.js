@@ -240,6 +240,49 @@ function HomePage() {
     }
   };
 
+  const updateGraphWithUserAndHashtags = async (username, hashtags) => {
+    const session = driver.session();
+  
+    try {
+      for (const hashtag of hashtags) {
+        const tagName = `#${hashtag}`; // Ensuring hashtag starts with '#'
+  
+        // Merge user node: creates if not exists, matches otherwise
+        const userQuery = `
+          MERGE (user:User {username: $username})
+          ON CREATE SET user.created = timestamp()
+          RETURN user
+        `;
+        await session.run(userQuery, { username });
+  
+        // Merge hashtag node with type 'hashtag': creates if not exists, matches otherwise
+        const hashtagQuery = `
+          MERGE (hashtag:Hashtag {name: $tagName, type: 'hashtag'})
+          ON CREATE SET hashtag.created = timestamp()
+          RETURN hashtag
+        `;
+        await session.run(hashtagQuery, { tagName });
+  
+        // Create or update bidirectional 'mentions' relationship
+        const relationshipQuery = `
+          MATCH (user:User {username: $username}), (hashtag:Hashtag {name: $tagName})
+          MERGE (user)-[r:MENTIONS]->(hashtag)
+            ON CREATE SET r.count = 1, r.type = 'hashtag'
+            ON MATCH SET r.count = r.count + 1
+          MERGE (hashtag)-[s:MENTIONS]->(user)
+            ON CREATE SET s.count = 1, s.type = 'hashtag'
+            ON MATCH SET s.count = s.count + 1
+          RETURN r, s
+        `;
+        await session.run(relationshipQuery, { username, tagName });
+      }
+    } catch (error) {
+      console.error("Error updating Neo4j graph with user and hashtags:", error);
+    } finally {
+      await session.close();
+    }
+  };  
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (isSubmitting) return;
@@ -350,6 +393,10 @@ function HomePage() {
         setErrorMessage("Failed to upload images. Please try again.");
         return;
       }
+    }
+
+    if (hashtags.length > 0) {
+      await updateGraphWithUserAndHashtags(username, hashtags);
     }
 
     // Then add the message to Firestore
