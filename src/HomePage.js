@@ -355,7 +355,29 @@ function HomePage() {
     // Then add the message to Firestore
     try {
       await addDoc(collection(db, "messages"), message);
-      // Clear states after successful submission
+      // After successful message addition, update user's interests with hashtags
+      if (hashtags.length > 0) {
+        const interestsRef = collection(db, "interests");
+        const q = query(interestsRef, where("userID", "==", username));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          // If user does not have interests document, create one
+          await addDoc(interestsRef, {
+            userID: username,
+            tags: hashtags,
+          });
+        } else {
+          // If user already has interests document, update it with new hashtags
+          querySnapshot.forEach(async (doc) => {
+            const existingTags = doc.data().tags || [];
+            const updatedTags = [...new Set([...existingTags, ...hashtags])]; // Combine and remove duplicates
+            await updateDoc(doc.ref, { tags: updatedTags });
+          });
+        }
+      }
+      mentions.forEach((mention) => {
+        addMention(username, mention);
+      });
       setText("");
       setImages([]);
       fileInputRef.current.value = "";
