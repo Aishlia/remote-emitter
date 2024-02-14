@@ -104,6 +104,7 @@ function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
+  const [topHashtags, setTopHashtags] = useState([]);
 
   // Retrieve username from localStorage or assign new random username
   useEffect(() => {
@@ -156,6 +157,17 @@ function HomePage() {
         id: doc.id,
       }));
       setMessages(msgs);
+
+      // Aggregate and count hashtags
+      const allHashtags = msgs.flatMap((msg) => msg.hashtags || []);
+      const hashtagCounts = allHashtags.reduce((acc, hashtag) => {
+        acc[hashtag] = (acc[hashtag] || 0) + 1;
+        return acc;
+      }, {});
+      const sortedHashtags = Object.entries(hashtagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3); // Get top 3 hashtags
+      setTopHashtags(sortedHashtags);
     });
 
     return () => unsubscribe();
@@ -481,6 +493,13 @@ function HomePage() {
         {errorMessage && (
           <div style={{ color: "red", marginTop: "10px" }}>{errorMessage}</div>
         )}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+          {topHashtags.map(([hashtag, count]) => (
+            <span key={hashtag}>
+              <strong>#{hashtag}</strong><sup>{count}</sup>
+            </span>
+          ))}
+        </div>
         <div style={{ margin: "10px 0" }}>
           <button
             className={`button ${
